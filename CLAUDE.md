@@ -1,1 +1,1 @@
-@AGENTS.md
+Proyecto Porra Mundial 2026 — lee README.md para el contexto completo

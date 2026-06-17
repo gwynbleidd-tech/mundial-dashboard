@@ -1,0 +1,470 @@
+{
+  "2026-06-11": [
+    {
+      "partido": "México-Sudáfrica",
+      "local": "México",
+      "visitante": "Sudáfrica",
+      "kickoff": "2026-06-11T21:00:00"
+    }
+  ],
+  "2026-06-12": [
+    {
+      "partido": "Corea del Sur-República Checa",
+      "local": "Corea del Sur",
+      "visitante": "República Checa",
+      "kickoff": "2026-06-12T04:00:00"
+    },
+    {
+      "partido": "Canadá-Bosnia y Herzegovina",
+      "local": "Canadá",
+      "visitante": "Bosnia y Herzegovina",
+      "kickoff": "2026-06-12T21:00:00"
+    }
+  ],
+  "2026-06-13": [
+    {
+      "partido": "Estados Unidos-Paraguay",
+      "local": "Estados Unidos",
+      "visitante": "Paraguay",
+      "kickoff": "2026-06-13T03:00:00"
+    },
+    {
+      "partido": "Catar-Suiza",
+      "local": "Catar",
+      "visitante": "Suiza",
+      "kickoff": "2026-06-13T21:00:00"
+    }
+  ],
+  "2026-06-14": [
+    {
+      "partido": "Brasil-Marruecos",
+      "local": "Brasil",
+      "visitante": "Marruecos",
+      "kickoff": "2026-06-14T00:00:00"
+    },
+    {
+      "partido": "Haití-Escocia",
+      "local": "Haití",
+      "visitante": "Escocia",
+      "kickoff": "2026-06-14T03:00:00"
+    },
+    {
+      "partido": "Australia-Turquía",
+      "local": "Australia",
+      "visitante": "Turquía",
+      "kickoff": "2026-06-14T06:00:00"
+    },
+    {
+      "partido": "Alemania-Curazao",
+      "local": "Alemania",
+      "visitante": "Curazao",
+      "kickoff": "2026-06-14T19:00:00"
+    },
+    {
+      "partido": "Países Bajos-Japón",
+      "local": "Países Bajos",
+      "visitante": "Japón",
+      "kickoff": "2026-06-14T22:00:00"
+    }
+  ],
+  "2026-06-15": [
+    {
+      "partido": "Costa de Marfil-Ecuador",
+      "local": "Costa de Marfil",
+      "visitante": "Ecuador",
+      "kickoff": "2026-06-15T01:00:00"
+    },
+    {
+      "partido": "Suecia-Túnez",
+      "local": "Suecia",
+      "visitante": "Túnez",
+      "kickoff": "2026-06-15T04:00:00"
+    },
+    {
+      "partido": "España-Cabo Verde",
+      "local": "España",
+      "visitante": "Cabo Verde",
+      "kickoff": "2026-06-15T18:00:00"
+    },
+    {
+      "partido": "Bélgica-Egipto",
+      "local": "Bélgica",
+      "visitante": "Egipto",
+      "kickoff": "2026-06-15T21:00:00"
+    }
+  ],
+  "2026-06-16": [
+    {
+      "partido": "Arabia Saudita-Uruguay",
+      "local": "Arabia Saudita",
+      "visitante": "Uruguay",
+      "kickoff": "2026-06-16T00:00:00"
+    },
+    {
+      "partido": "Irán-Nueva Zelanda",
+      "local": "Irán",
+      "visitante": "Nueva Zelanda",
+      "kickoff": "2026-06-16T03:00:00"
+    },
+    {
+      "partido": "Francia-Senegal",
+      "local": "Francia",
+      "visitante": "Senegal",
+      "kickoff": "2026-06-16T21:00:00"
+    }
+  ],
+  "2026-06-17": [
+    {
+      "partido": "Irak-Noruega",
+      "local": "Irak",
+      "visitante": "Noruega",
+      "kickoff": "2026-06-17T00:00:00"
+    },
+    {
+      "partido": "Argentina-Argelia",
+      "local": "Argentina",
+      "visitante": "Argelia",
+      "kickoff": "2026-06-17T03:00:00"
+    },
+    {
+      "partido": "Austria-Jordania",
+      "local": "Austria",
+      "visitante": "Jordania",
+      "kickoff": "2026-06-17T06:00:00"
+    },
+    {
+      "partido": "Portugal-RD Congo",
+      "local": "Portugal",
+      "visitante": "RD Congo",
+      "kickoff": "2026-06-17T19:00:00"
+    },
+    {
+      "partido": "Inglaterra-Croacia",
+      "local": "Inglaterra",
+      "visitante": "Croacia",
+      "kickoff": "2026-06-17T22:00:00"
+    }
+  ],
+  "2026-06-18": [
+    {
+      "partido": "Ghana-Panamá",
+      "local": "Ghana",
+      "visitante": "Panamá",
+      "kickoff": "2026-06-18T01:00:00"
+    },
+    {
+      "partido": "Uzbekistán-Colombia",
+      "local": "Uzbekistán",
+      "visitante": "Colombia",
+      "kickoff": "2026-06-18T04:00:00"
+    },
+    {
+      "partido": "República Checa-Sudáfrica",
+      "local": "República Checa",
+      "visitante": "Sudáfrica",
+      "kickoff": "2026-06-18T18:00:00"
+    },
+    {
+      "partido": "Suiza-Bosnia y Herzegovina",
+      "local": "Suiza",
+      "visitante": "Bosnia y Herzegovina",
+      "kickoff": "2026-06-18T21:00:00"
+    }
+  ],
+  "2026-06-19": [
+    {
+      "partido": "Canadá-Catar",
+      "local": "Canadá",
+      "visitante": "Catar",
+      "kickoff": "2026-06-19T00:00:00"
+    },
+    {
+      "partido": "México-Corea del Sur",
+      "local": "México",
+      "visitante": "Corea del Sur",
+      "kickoff": "2026-06-19T03:00:00"
+    },
+    {
+      "partido": "Estados Unidos-Australia",
+      "local": "Estados Unidos",
+      "visitante": "Australia",
+      "kickoff": "2026-06-19T21:00:00"
+    }
+  ],
+  "2026-06-20": [
+    {
+      "partido": "Escocia-Marruecos",
+      "local": "Escocia",
+      "visitante": "Marruecos",
+      "kickoff": "2026-06-20T00:00:00"
+    },
+    {
+      "partido": "Brasil-Haití",
+      "local": "Brasil",
+      "visitante": "Haití",
+      "kickoff": "2026-06-20T02:30:00"
+    },
+    {
+      "partido": "Turquía-Paraguay",
+      "local": "Turquía",
+      "visitante": "Paraguay",
+      "kickoff": "2026-06-20T05:00:00"
+    },
+    {
+      "partido": "Países Bajos-Suecia",
+      "local": "Países Bajos",
+      "visitante": "Suecia",
+      "kickoff": "2026-06-20T19:00:00"
+    },
+    {
+      "partido": "Alemania-Costa de Marfil",
+      "local": "Alemania",
+      "visitante": "Costa de Marfil",
+      "kickoff": "2026-06-20T22:00:00"
+    }
+  ],
+  "2026-06-21": [
+    {
+      "partido": "Ecuador-Curazao",
+      "local": "Ecuador",
+      "visitante": "Curazao",
+      "kickoff": "2026-06-21T02:00:00"
+    },
+    {
+      "partido": "Túnez-Japón",
+      "local": "Túnez",
+      "visitante": "Japón",
+      "kickoff": "2026-06-21T06:00:00"
+    },
+    {
+      "partido": "España-Arabia Saudita",
+      "local": "España",
+      "visitante": "Arabia Saudita",
+      "kickoff": "2026-06-21T18:00:00"
+    },
+    {
+      "partido": "Bélgica-Irán",
+      "local": "Bélgica",
+      "visitante": "Irán",
+      "kickoff": "2026-06-21T21:00:00"
+    }
+  ],
+  "2026-06-22": [
+    {
+      "partido": "Uruguay-Cabo Verde",
+      "local": "Uruguay",
+      "visitante": "Cabo Verde",
+      "kickoff": "2026-06-22T00:00:00"
+    },
+    {
+      "partido": "Nueva Zelanda-Egipto",
+      "local": "Nueva Zelanda",
+      "visitante": "Egipto",
+      "kickoff": "2026-06-22T03:00:00"
+    },
+    {
+      "partido": "Argentina-Austria",
+      "local": "Argentina",
+      "visitante": "Austria",
+      "kickoff": "2026-06-22T19:00:00"
+    },
+    {
+      "partido": "Francia-Irak",
+      "local": "Francia",
+      "visitante": "Irak",
+      "kickoff": "2026-06-22T23:00:00"
+    }
+  ],
+  "2026-06-23": [
+    {
+      "partido": "Noruega-Senegal",
+      "local": "Noruega",
+      "visitante": "Senegal",
+      "kickoff": "2026-06-23T02:00:00"
+    },
+    {
+      "partido": "Jordania-Argelia",
+      "local": "Jordania",
+      "visitante": "Argelia",
+      "kickoff": "2026-06-23T05:00:00"
+    },
+    {
+      "partido": "Portugal-Uzbekistán",
+      "local": "Portugal",
+      "visitante": "Uzbekistán",
+      "kickoff": "2026-06-23T19:00:00"
+    },
+    {
+      "partido": "Inglaterra-Ghana",
+      "local": "Inglaterra",
+      "visitante": "Ghana",
+      "kickoff": "2026-06-23T22:00:00"
+    }
+  ],
+  "2026-06-24": [
+    {
+      "partido": "Panamá-Croacia",
+      "local": "Panamá",
+      "visitante": "Croacia",
+      "kickoff": "2026-06-24T01:00:00"
+    },
+    {
+      "partido": "Colombia-RD Congo",
+      "local": "Colombia",
+      "visitante": "RD Congo",
+      "kickoff": "2026-06-24T04:00:00"
+    },
+    {
+      "partido": "Suiza-Canadá",
+      "local": "Suiza",
+      "visitante": "Canadá",
+      "kickoff": "2026-06-24T21:00:00"
+    },
+    {
+      "partido": "Bosnia y Herzegovina-Catar",
+      "local": "Bosnia y Herzegovina",
+      "visitante": "Catar",
+      "kickoff": "2026-06-24T21:00:00"
+    }
+  ],
+  "2026-06-25": [
+    {
+      "partido": "Escocia-Brasil",
+      "local": "Escocia",
+      "visitante": "Brasil",
+      "kickoff": "2026-06-25T00:00:00"
+    },
+    {
+      "partido": "Marruecos-Haití",
+      "local": "Marruecos",
+      "visitante": "Haití",
+      "kickoff": "2026-06-25T00:00:00"
+    },
+    {
+      "partido": "República Checa-México",
+      "local": "República Checa",
+      "visitante": "México",
+      "kickoff": "2026-06-25T03:00:00"
+    },
+    {
+      "partido": "Sudáfrica-Corea del Sur",
+      "local": "Sudáfrica",
+      "visitante": "Corea del Sur",
+      "kickoff": "2026-06-25T03:00:00"
+    },
+    {
+      "partido": "Curazao-Costa de Marfil",
+      "local": "Curazao",
+      "visitante": "Costa de Marfil",
+      "kickoff": "2026-06-25T22:00:00"
+    },
+    {
+      "partido": "Ecuador-Alemania",
+      "local": "Ecuador",
+      "visitante": "Alemania",
+      "kickoff": "2026-06-25T22:00:00"
+    }
+  ],
+  "2026-06-26": [
+    {
+      "partido": "Japón-Suecia",
+      "local": "Japón",
+      "visitante": "Suecia",
+      "kickoff": "2026-06-26T01:00:00"
+    },
+    {
+      "partido": "Túnez-Países Bajos",
+      "local": "Túnez",
+      "visitante": "Países Bajos",
+      "kickoff": "2026-06-26T01:00:00"
+    },
+    {
+      "partido": "Turquía-Estados Unidos",
+      "local": "Turquía",
+      "visitante": "Estados Unidos",
+      "kickoff": "2026-06-26T04:00:00"
+    },
+    {
+      "partido": "Paraguay-Australia",
+      "local": "Paraguay",
+      "visitante": "Australia",
+      "kickoff": "2026-06-26T04:00:00"
+    },
+    {
+      "partido": "Noruega-Francia",
+      "local": "Noruega",
+      "visitante": "Francia",
+      "kickoff": "2026-06-26T21:00:00"
+    },
+    {
+      "partido": "Senegal-Irak",
+      "local": "Senegal",
+      "visitante": "Irak",
+      "kickoff": "2026-06-26T21:00:00"
+    }
+  ],
+  "2026-06-27": [
+    {
+      "partido": "Cabo Verde-Arabia Saudita",
+      "local": "Cabo Verde",
+      "visitante": "Arabia Saudita",
+      "kickoff": "2026-06-27T02:00:00"
+    },
+    {
+      "partido": "Uruguay-España",
+      "local": "Uruguay",
+      "visitante": "España",
+      "kickoff": "2026-06-27T02:00:00"
+    },
+    {
+      "partido": "Egipto-Irán",
+      "local": "Egipto",
+      "visitante": "Irán",
+      "kickoff": "2026-06-27T05:00:00"
+    },
+    {
+      "partido": "Nueva Zelanda-Bélgica",
+      "local": "Nueva Zelanda",
+      "visitante": "Bélgica",
+      "kickoff": "2026-06-27T05:00:00"
+    },
+    {
+      "partido": "Panamá-Inglaterra",
+      "local": "Panamá",
+      "visitante": "Inglaterra",
+      "kickoff": "2026-06-27T23:00:00"
+    },
+    {
+      "partido": "Croacia-Ghana",
+      "local": "Croacia",
+      "visitante": "Ghana",
+      "kickoff": "2026-06-27T23:00:00"
+    }
+  ],
+  "2026-06-28": [
+    {
+      "partido": "Colombia-Portugal",
+      "local": "Colombia",
+      "visitante": "Portugal",
+      "kickoff": "2026-06-28T01:30:00"
+    },
+    {
+      "partido": "RD Congo-Uzbekistán",
+      "local": "RD Congo",
+      "visitante": "Uzbekistán",
+      "kickoff": "2026-06-28T01:30:00"
+    },
+    {
+      "partido": "Argelia-Austria",
+      "local": "Argelia",
+      "visitante": "Austria",
+      "kickoff": "2026-06-28T04:00:00"
+    },
+    {
+      "partido": "Jordania-Argentina",
+      "local": "Jordania",
+      "visitante": "Argentina",
+      "kickoff": "2026-06-28T04:00:00"
+    }
+  ]
+}
