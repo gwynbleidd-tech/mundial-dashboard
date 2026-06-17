@@ -52,6 +52,12 @@ export default function Home() {
 
   return (
     <div style={{ minHeight: "100%", background: C.paper, color: C.ink, fontFamily: "'Inter', system-ui, sans-serif" }}>
+      {/* Tapa fija que siempre cubre la zona de la barra de estado con el verde del header */}
+      <div style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+        height: "env(safe-area-inset-top)",
+        background: C.pitch,
+      }} />
       <div style={{ maxWidth: 460, margin: "0 auto", paddingBottom: "calc(90px + env(safe-area-inset-bottom))" }}>
 
         {/* Header */}
