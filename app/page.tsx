@@ -52,25 +52,24 @@ export default function Home() {
 
   return (
     <div style={{ minHeight: "100%", background: C.paper, color: C.ink, fontFamily: "'Inter', system-ui, sans-serif" }}>
-      <div style={{ maxWidth: 460, margin: "0 auto", paddingBottom: 90 }}>
+      <div style={{ maxWidth: 460, margin: "0 auto", paddingBottom: "calc(90px + env(safe-area-inset-bottom))" }}>
 
         {/* Header */}
         <header style={{
-          padding: "22px 20px 16px",
+          padding: "18px 20px 14px",
           borderBottom: `2px solid ${C.ink}`,
           background: `linear-gradient(180deg,${C.pitch} 0%,${C.pitchLit} 100%)`,
         }}>
-          <div style={{
-            fontSize: 10, letterSpacing: ".22em", color: C.chalk,
-            opacity: 0.85, textTransform: "uppercase", fontWeight: 700,
-          }}>
-            La Porra · Norteamérica
-          </div>
-          <div style={{
-            fontFamily: "'Anton', sans-serif", fontSize: 40, color: C.chalk,
-            lineHeight: 0.95, marginTop: 4, letterSpacing: ".01em",
-          }}>
-            MUNDIAL<br />2026
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+            <div style={{
+              fontFamily: "'Anton', sans-serif", fontSize: 40, color: C.chalk,
+              lineHeight: 0.95, letterSpacing: ".01em",
+            }}>
+              MUNDIAL ⚽<br />2026
+            </div>
+            <div style={{ fontSize: 30, lineHeight: 1, display: "flex", gap: 6, paddingTop: 2 }}>
+              🇺🇸🇨🇦🇲🇽
+            </div>
           </div>
           <div style={{
             fontSize: 10, color: C.chalk, opacity: 0.6,
@@ -127,6 +126,7 @@ export default function Home() {
           position: "fixed", bottom: 0, left: 0, right: 0, maxWidth: 460,
           margin: "0 auto", display: "flex",
           borderTop: `1px solid ${C.line}`, background: C.paper,
+          paddingBottom: "env(safe-area-inset-bottom)",
         }}>
           {TABS.map(([id, label]) => (
             <button
