@@ -58,7 +58,7 @@ export default function Home() {
         height: "env(safe-area-inset-top)",
         background: C.pitch,
       }} />
-      <div style={{ maxWidth: 460, margin: "0 auto", paddingBottom: "calc(90px + env(safe-area-inset-bottom))" }}>
+      <div style={{ maxWidth: 460, margin: "0 auto", paddingBottom: "calc(52px + env(safe-area-inset-bottom))" }}>
 
         {/* Header */}
         <header style={{
@@ -133,25 +133,27 @@ export default function Home() {
           )}
         </main>
 
-        {/* Bottom nav */}
+        {/* Bottom nav — altura fija para que no varíe al cambiar de tab */}
         <nav style={{
           position: "fixed", bottom: 0, left: 0, right: 0, maxWidth: 460,
-          margin: "0 auto", display: "flex",
+          margin: "0 auto", display: "flex", alignItems: "flex-start",
+          height: "calc(52px + env(safe-area-inset-bottom))",
           borderTop: `1px solid ${C.line}`, background: C.paper,
-          paddingBottom: "env(safe-area-inset-bottom)",
         }}>
           {TABS.map(([id, label]) => (
             <button
               key={id}
               onClick={() => setTab(id)}
               style={{
-                flex: 1, padding: "12px 4px 14px",
+                flex: 1, height: 52,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                padding: "0 4px",
                 border: "none", background: "none", cursor: "pointer",
                 borderTop: `3px solid ${tab === id ? C.pitch : "transparent"}`,
                 color: tab === id ? C.ink : C.muted,
                 fontWeight: tab === id ? 700 : 500,
                 fontSize: 11.5, letterSpacing: ".02em",
-                whiteSpace: "nowrap", overflow: "hidden",
+                whiteSpace: "nowrap",
               }}
             >
               {label}
