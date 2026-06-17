@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import type { Player, RealResults, Pred, RealScore } from "@/lib/scoring";
+import type { Player, RealResults } from "@/lib/scoring";
+import { scoreMatch, GRUPO_PTS } from "@/lib/scoring";
+import type { YoutubeUrls } from "@/lib/supabase";
 import horariosData from "@/data/horarios_grupos.json";
 import { C } from "@/lib/theme";
 
@@ -48,20 +50,16 @@ function formatHora(kickoff: string): string {
   return kickoff.slice(11, 16);
 }
 
-// ---- scoring de grupo (igual que JugadorScreen) ----
+// ---- estilos de hit ----
 
-function scoreGrupo(pred: Pred, real: RealScore): { pts: number; hit: "exacto" | "signo" | "fallo" } {
-  const sign = (l: number, v: number) => l > v ? "1" : l < v ? "2" : "X";
-  if (sign(pred.local, pred.visitante) !== sign(real.local, real.visitante)) {
-    return { pts: 0, hit: "fallo" };
-  }
-  let pts = 2;
-  if (pred.local - pred.visitante === real.local - real.visitante) pts++;
-  if (pred.local === real.local && pred.visitante === real.visitante) pts += 3;
-  const hit = pred.local === real.local && pred.visitante === real.visitante
-    ? "exacto" : "signo";
-  return { pts, hit };
-}
+const HIT_COLOR: Record<"exacto" | "signo" | "fallo", string> = {
+  exacto: "#2E8B57",
+  signo:  "#B87333",
+  fallo:  C.rojo,
+};
+
+
+// ---- subcomponentes ----
 
 function Score({ a, b }: { a: number; b: number }) {
   return (
@@ -71,15 +69,15 @@ function Score({ a, b }: { a: number; b: number }) {
   );
 }
 
-const BG: Record<"exacto" | "signo" | "fallo", string> = {
-  exacto: "#E6F0E9",
-  signo: "#F6EFD6",
-  fallo: C.paper,
-};
-
 const hStyle: React.CSSProperties = {
   fontFamily: "'Anton', sans-serif", fontWeight: 400, fontSize: 22,
   color: C.ink, margin: 0, letterSpacing: ".01em", textTransform: "uppercase",
+};
+
+const btnBase: React.CSSProperties = {
+  width: 36, height: 36, borderRadius: 3, flexShrink: 0,
+  background: "none", display: "flex", alignItems: "center", justifyContent: "center",
+  fontSize: 18, fontWeight: 700,
 };
 
 // ---- componente principal ----
@@ -87,15 +85,25 @@ const hStyle: React.CSSProperties = {
 interface Props {
   players: Player[];
   real: RealResults;
+  youtube: YoutubeUrls;
 }
 
-export default function JornadaScreen({ players, real }: Props) {
+export default function JornadaScreen({ players, real, youtube }: Props) {
   const [day, setDay] = useState<string>(getDefaultDay);
+  const [open, setOpen] = useState<Set<string>>(() => new Set());
 
   const idx = DAYS.indexOf(day);
   const fixtures = (horarios[day] ?? [])
     .slice()
     .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+
+  function toggleFixture(partido: string) {
+    setOpen((prev) => {
+      const next = new Set(prev);
+      next.has(partido) ? next.delete(partido) : next.add(partido);
+      return next;
+    });
+  }
 
   return (
     <div>
@@ -107,35 +115,40 @@ export default function JornadaScreen({ players, real }: Props) {
           onClick={() => setDay(DAYS[idx - 1])}
           disabled={idx === 0}
           style={{
-            width: 36, height: 36, borderRadius: 3, flexShrink: 0,
+            ...btnBase,
             border: `1px solid ${idx === 0 ? C.line : C.ink}`,
-            background: "none", cursor: idx === 0 ? "default" : "pointer",
+            cursor: idx === 0 ? "default" : "pointer",
             color: idx === 0 ? C.line : C.ink,
-            fontSize: 18, fontWeight: 700,
-            display: "flex", alignItems: "center", justifyContent: "center",
           }}
           aria-label="Día anterior"
         >
           ‹
         </button>
 
-        <div style={{
-          flex: 1, textAlign: "center", fontWeight: 700, fontSize: 14,
-          color: C.ink, letterSpacing: ".01em",
-        }}>
-          {formatDia(day)}
-        </div>
+        <select
+          value={day}
+          onChange={(e) => setDay(e.target.value)}
+          style={{
+            flex: 1, height: 36, border: `1px solid ${C.ink}`,
+            borderRadius: 3, background: C.paper, color: C.ink,
+            fontWeight: 700, fontSize: 13, letterSpacing: ".01em",
+            padding: "0 8px", cursor: "pointer", appearance: "none",
+            textAlign: "center",
+          }}
+        >
+          {DAYS.map((d) => (
+            <option key={d} value={d}>{formatDia(d)}</option>
+          ))}
+        </select>
 
         <button
           onClick={() => setDay(DAYS[idx + 1])}
           disabled={idx === DAYS.length - 1}
           style={{
-            width: 36, height: 36, borderRadius: 3, flexShrink: 0,
+            ...btnBase,
             border: `1px solid ${idx === DAYS.length - 1 ? C.line : C.ink}`,
-            background: "none", cursor: idx === DAYS.length - 1 ? "default" : "pointer",
+            cursor: idx === DAYS.length - 1 ? "default" : "pointer",
             color: idx === DAYS.length - 1 ? C.line : C.ink,
-            fontSize: 18, fontWeight: 700,
-            display: "flex", alignItems: "center", justifyContent: "center",
           }}
           aria-label="Día siguiente"
         >
@@ -150,58 +163,125 @@ export default function JornadaScreen({ players, real }: Props) {
             Sin partidos este día
           </p>
         )}
-        {fixtures.map((fixture, i) => {
+        {fixtures.map((fixture) => {
           const r = real[fixture.partido];
-          return (
-            <div key={i} style={{ borderBottom: `1px solid ${C.line}`, padding: "12px 2px" }}>
+          const isOpen = open.has(fixture.partido);
+          const yt = youtube[fixture.partido];
 
-              {/* Cabecera del partido */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
-                  <span style={{
-                    fontFamily: "'DM Mono', monospace", fontSize: 12,
-                    color: C.muted, flexShrink: 0,
-                  }}>
-                    {formatHora(fixture.kickoff)}
-                  </span>
-                  <span style={{
-                    fontWeight: 700, fontSize: 14, color: C.ink,
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  }}>
-                    {fixture.local} – {fixture.visitante}
-                  </span>
-                </div>
+          return (
+            <div key={fixture.partido} style={{ borderBottom: `1px solid ${C.line}` }}>
+
+              {/* Cabecera colapsable */}
+              <button
+                onClick={() => toggleFixture(fixture.partido)}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center",
+                  gap: 8, padding: "11px 2px",
+                  border: "none", background: "none", cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
+                {/* Hora */}
+                <span style={{
+                  fontFamily: "'DM Mono', monospace", fontSize: 12,
+                  color: C.muted, flexShrink: 0, width: 36,
+                }}>
+                  {formatHora(fixture.kickoff)}
+                </span>
+
+                {/* Equipos */}
+                <span style={{
+                  flex: 1, fontWeight: 700, fontSize: 14, color: C.ink,
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  textAlign: "left",
+                }}>
+                  {fixture.local} – {fixture.visitante}
+                </span>
+
+                {/* Resultado o estado */}
                 <span style={{ fontSize: 13, flexShrink: 0 }}>
                   {r
                     ? <Score a={r.local} b={r.visitante} />
-                    : <span style={{ color: C.muted, fontSize: 11 }}>sin jugar</span>}
+                    : <span style={{ color: C.muted, fontSize: 11 }}>pendiente</span>}
                 </span>
-              </div>
 
-              {/* Predicciones de los 8 jugadores */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-                {players.map((p) => {
-                  const pm = p.fase_grupos.find((m) => m.partido === fixture.partido);
-                  if (!pm) return null;
-                  const s = r ? scoreGrupo(pm.pred, r) : null;
-                  return (
-                    <span
-                      key={p.id}
-                      style={{
-                        fontSize: 11, border: `1px solid ${C.line}`,
-                        borderRadius: 2, padding: "3px 6px",
-                        background: s ? BG[s.hit] : C.paper,
-                      }}
-                    >
-                      <b style={{ color: C.ink }}>{p.nombre.split(" ")[0]}</b>
-                      <span style={{ color: C.muted, marginLeft: 5 }}>
-                        {pm.pred.local}-{pm.pred.visitante}
-                      </span>
-                    </span>
-                  );
-                })}
-              </div>
+                {/* YouTube */}
+                {yt && (
+                  <a
+                    href={yt}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    title="Ver resumen"
+                    style={{
+                      flexShrink: 0, fontSize: 15, color: C.rojo,
+                      textDecoration: "none", lineHeight: 1,
+                      padding: "2px 4px",
+                    }}
+                  >
+                    ▶
+                  </a>
+                )}
 
+                {/* Chevron */}
+                <span style={{
+                  flexShrink: 0, fontSize: 12, color: C.muted,
+                  transform: isOpen ? "rotate(90deg)" : "none",
+                  transition: "transform .15s ease",
+                  display: "inline-block", width: 14, textAlign: "center",
+                }}>
+                  ›
+                </span>
+              </button>
+
+              {/* Predicciones expandidas */}
+              {isOpen && (
+                <div style={{ paddingBottom: 8, paddingLeft: 44 }}>
+                  {players.map((p) => {
+                    const pm = p.fase_grupos.find((m) => m.partido === fixture.partido);
+                    if (!pm) return null;
+                    const s = r ? scoreMatch(pm.pred, r, GRUPO_PTS) : null;
+                    const hit = s?.hit ?? null;
+
+                    return (
+                      <div
+                        key={p.id}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 10,
+                          padding: "3px 2px",
+                          borderBottom: `1px solid ${C.chalk}`,
+                        }}
+                      >
+                        <span style={{
+                          fontSize: 12, color: C.muted, fontWeight: 400,
+                          width: 72, flexShrink: 0,
+                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        }}>
+                          {p.nombre.split(" ")[0]}
+                        </span>
+
+                        <span style={{
+                          fontFamily: "'DM Mono', monospace", fontSize: 13,
+                          color: hit ? HIT_COLOR[hit] : C.muted,
+                          fontWeight: hit ? 600 : 400,
+                          flexShrink: 0,
+                        }}>
+                          {pm.pred.local}–{pm.pred.visitante}
+                        </span>
+
+                        <span style={{
+                          fontFamily: "'DM Mono', monospace", fontSize: 11,
+                          color: s && s.pts > 0 ? C.pitch : C.line,
+                          fontWeight: s && s.pts > 0 ? 700 : 400,
+                          flexShrink: 0, whiteSpace: "nowrap",
+                        }}>
+                          {s ? `+${s.pts} pts` : "–"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}

@@ -10,6 +10,7 @@ create table if not exists public.resultados (
   fase         text not null,             -- 'grupos' | 'dieciseisavos' | 'octavos' | 'cuartos' | 'semis' | '3y4' | 'final'
   local        smallint,                  -- goles equipo local (null = aún no jugado)
   visitante    smallint,                  -- goles equipo visitante
+  youtube_url  text,                      -- enlace al resumen del partido (nullable)
   updated_at   timestamptz not null default now()
 );
 

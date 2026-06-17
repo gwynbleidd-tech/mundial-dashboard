@@ -10,19 +10,23 @@ const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(url, anon);
 
-/** Lee todos los resultados de partidos y los devuelve como mapa { partido: {local, visitante} }. */
-export async function fetchResultados(): Promise<RealResults> {
+export type YoutubeUrls = Record<string, string>;
+
+/** Lee todos los resultados de partidos y los devuelve junto con los youtube_url. */
+export async function fetchResultados(): Promise<{ results: RealResults; youtube: YoutubeUrls }> {
   const { data, error } = await supabase
     .from("resultados")
-    .select("partido, local, visitante");
+    .select("partido, local, visitante, youtube_url");
   if (error) throw error;
-  const out: RealResults = {};
+  const results: RealResults = {};
+  const youtube: YoutubeUrls = {};
   for (const row of data ?? []) {
     if (row.local != null && row.visitante != null) {
-      out[row.partido] = { local: row.local, visitante: row.visitante };
+      results[row.partido] = { local: row.local, visitante: row.visitante };
     }
+    if (row.youtube_url) youtube[row.partido] = row.youtube_url;
   }
-  return out;
+  return { results, youtube };
 }
 
 /** Lee el cuadro de honor real, posiciones y clasificados como mapa clave-valor. */
@@ -44,5 +48,13 @@ export async function setResultado(partido: string, fase: string, local: number 
   const { error } = await supabase
     .from("resultados")
     .upsert({ partido, fase, local, visitante }, { onConflict: "partido" });
+  if (error) throw error;
+}
+
+/** Guarda/actualiza el youtube_url de un partido. */
+export async function setYoutubeUrl(partido: string, youtube_url: string | null) {
+  const { error } = await supabase
+    .from("resultados")
+    .upsert({ partido, youtube_url }, { onConflict: "partido" });
   if (error) throw error;
 }

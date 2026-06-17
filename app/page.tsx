@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import type { Player, RealResults, RealExtra } from "@/lib/scoring";
 import { standings } from "@/lib/scoring";
-import { fetchResultados, fetchExtra } from "@/lib/supabase";
+import { fetchResultados, fetchExtra, type YoutubeUrls } from "@/lib/supabase";
 import predictionsData from "@/data/predictions.json";
 import ClasificacionScreen from "@/components/ClasificacionScreen";
 import JugadorScreen from "@/components/JugadorScreen";
@@ -29,12 +29,14 @@ export default function Home() {
   const [picked, setPicked] = useState<string>(players[0]?.id ?? "");
   const [real, setReal] = useState<RealResults>({});
   const [extra, setExtra] = useState<RealExtra>({});
+  const [youtube, setYoutube] = useState<YoutubeUrls>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([fetchResultados(), fetchExtra()])
-      .then(([r, e]) => {
-        setReal(r);
+      .then(([{ results, youtube: yt }, e]) => {
+        setReal(results);
+        setYoutube(yt);
         setExtra(e);
       })
       .catch(console.error)
@@ -77,7 +79,7 @@ export default function Home() {
             />
           )}
           {tab === "dia" && (
-            <JornadaScreen players={players} real={real} />
+            <JornadaScreen players={players} real={real} youtube={youtube} />
           )}
           {tab === "jug" && (
             <JugadorScreen

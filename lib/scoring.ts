@@ -40,7 +40,7 @@ const CLASIF_PTS: Record<string, number> = {
   dieciseisavos: 3, octavos: 10, cuartos: 15, semis: 20, "3y4": 15, final: 25,
 };
 const POS_PTS = 5;       // posición exacta en grupo (1º/2º/3º/4º)
-const GRUPO_PTS: [number, number, number] = [2, 1, 3]; // signo, diferencia, exacto
+export const GRUPO_PTS: [number, number, number] = [2, 1, 3]; // signo, diferencia, exacto
 
 const HONOR_PTS: Record<string, number> = {
   campeon: 50, subcampeon: 40, tercero: 30,
@@ -53,7 +53,7 @@ function signoDe(l: number, v: number): Signo {
 }
 
 /** Puntúa un partido (grupos o KO) dado el baremo [signo, dif, exacto]. */
-function scoreMatch(pred: Pred, real: RealScore | undefined, baremo: [number, number, number]) {
+export function scoreMatch(pred: Pred, real: RealScore | undefined, baremo: [number, number, number]) {
   if (!real) return { pts: 0, hit: null as null | "exacto" | "signo" | "fallo" };
   const [pSigno, pDif, pExacto] = baremo;
   const predSigno = signoDe(pred.local, pred.visitante);
