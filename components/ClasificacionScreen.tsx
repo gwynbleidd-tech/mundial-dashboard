@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Player, Breakdown } from "@/lib/scoring";
 import { C } from "@/lib/theme";
 
@@ -13,6 +14,66 @@ interface Props {
 }
 
 const PODIO = ["🥇", "🥈", "🥉"];
+
+function buildShareText(ranked: RankedEntry[]): string {
+  const fecha = new Date().toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+  const anyPlayed = ranked.some(r => r.score.partidosJugados > 0);
+  const maxPartidos = Math.max(...ranked.map(r => r.score.partidosJugados), 0);
+
+  const line = "─".repeat(22);
+  const rows = ranked.map((r, i) => {
+    const pos = i < 3 ? PODIO[i] : `${String(i + 1).padStart(2)}. `;
+    const nombre = r.player.nombre.padEnd(14);
+    return `${pos} ${nombre} ${r.score.total} pts`;
+  });
+
+  const parts = [`🏆 Porra Mundial 2026 · ${fecha}`, line, ...rows, line];
+  if (anyPlayed) parts.push(`${maxPartidos} partido${maxPartidos !== 1 ? "s" : ""} jugado${maxPartidos !== 1 ? "s" : ""}`);
+
+  return parts.join("\n");
+}
+
+function ShareButton({ ranked }: { ranked: RankedEntry[] }) {
+  const [status, setStatus] = useState<"idle" | "copied">("idle");
+
+  async function handleShare() {
+    const text = buildShareText(ranked);
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Porra Mundial 2026", text });
+        return;
+      } catch {
+        // user cancelled or share failed → fall through to clipboard
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setStatus("copied");
+      setTimeout(() => setStatus("idle"), 2000);
+    } catch {
+      // clipboard blocked (unlikely but possible) — nothing to do
+    }
+  }
+
+  return (
+    <button
+      onClick={handleShare}
+      style={{
+        display: "flex", alignItems: "center", gap: 6,
+        marginBottom: 16,
+        padding: "8px 16px",
+        border: `1px solid ${C.pitch}`,
+        borderRadius: 8,
+        background: status === "copied" ? C.pitch : "transparent",
+        color: status === "copied" ? C.chalk : C.pitch,
+        fontWeight: 700, fontSize: 13, cursor: "pointer",
+        transition: "background .2s, color .2s",
+      }}
+    >
+      {status === "copied" ? "✓ Copiado" : "Compartir clasificación"}
+    </button>
+  );
+}
 
 export default function ClasificacionScreen({ ranked, loading, onPick }: Props) {
   if (loading) {
@@ -30,6 +91,9 @@ export default function ClasificacionScreen({ ranked, loading, onPick }: Props) 
 
   return (
     <div>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <ShareButton ranked={ranked} />
+      </div>
       {maxPts === 0 && (
         <p style={{
           fontSize: 12, color: C.muted, textAlign: "center",
