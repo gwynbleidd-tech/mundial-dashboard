@@ -1,0 +1,1 @@
+export const FECHA_CIERRE_PREDICCIONES = "2026-06-10";

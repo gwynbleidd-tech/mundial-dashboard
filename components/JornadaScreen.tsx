@@ -50,6 +50,21 @@ function formatHora(kickoff: string): string {
   return kickoff.slice(11, 16);
 }
 
+// Hora actual en Europe/Madrid como "YYYY-MM-DDTHH:MM" → comparación directa con kickoff
+function nowMadrid(): string {
+  return new Date()
+    .toLocaleString("sv-SE", { timeZone: "Europe/Madrid" })
+    .replace(" ", "T")
+    .slice(0, 16);
+}
+
+type MatchStatus = "proximo" | "pendiente" | "finalizado";
+
+function getMatchStatus(kickoff: string, hasResult: boolean): MatchStatus {
+  if (hasResult) return "finalizado";
+  return nowMadrid() < kickoff.slice(0, 16) ? "proximo" : "pendiente";
+}
+
 // ---- estilos de hit ----
 
 const HIT_COLOR: Record<"exacto" | "signo" | "fallo", string> = {
@@ -60,6 +75,25 @@ const HIT_COLOR: Record<"exacto" | "signo" | "fallo", string> = {
 
 
 // ---- subcomponentes ----
+
+const STATUS_CFG: Record<"proximo" | "pendiente", { label: string; color: string; border: string }> = {
+  proximo:   { label: "Próx.",  color: C.muted,   border: C.line },
+  pendiente: { label: "Pend.",  color: "#B87333",  border: "#D4A06A" },
+};
+
+function StatusBadge({ status }: { status: "proximo" | "pendiente" }) {
+  const cfg = STATUS_CFG[status];
+  return (
+    <span style={{
+      fontSize: 9, fontWeight: 700, letterSpacing: ".06em",
+      textTransform: "uppercase", color: cfg.color,
+      border: `1px solid ${cfg.border}`, borderRadius: 2,
+      padding: "2px 5px", flexShrink: 0,
+    }}>
+      {cfg.label}
+    </span>
+  );
+}
 
 function Score({ a, b }: { a: number; b: number }) {
   return (
@@ -200,9 +234,11 @@ export default function JornadaScreen({ players, real, youtube }: Props) {
 
                 {/* Resultado o estado */}
                 <span style={{ fontSize: 13, flexShrink: 0 }}>
-                  {r
-                    ? <Score a={r.local} b={r.visitante} />
-                    : <span style={{ color: C.muted, fontSize: 11 }}>pendiente</span>}
+                  {(() => {
+                    const status = getMatchStatus(fixture.kickoff, !!r);
+                    if (status === "finalizado") return <Score a={r!.local} b={r!.visitante} />;
+                    return <StatusBadge status={status} />;
+                  })()}
                 </span>
 
                 {/* YouTube */}

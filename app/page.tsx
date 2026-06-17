@@ -10,6 +10,11 @@ import JugadorScreen from "@/components/JugadorScreen";
 import JornadaScreen from "@/components/JornadaScreen";
 import AdminScreen from "@/components/AdminScreen";
 import { C } from "@/lib/theme";
+import { FECHA_CIERRE_PREDICCIONES } from "@/lib/config";
+
+const [cierreY, cierreM, cierreD] = FECHA_CIERRE_PREDICCIONES.split("-").map(Number);
+const fechaCierreLabel = new Date(cierreY, cierreM - 1, cierreD)
+  .toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
 
 const TABS = [
   ["clas", "Clasificación"],
@@ -66,6 +71,12 @@ export default function Home() {
             lineHeight: 0.95, marginTop: 4, letterSpacing: ".01em",
           }}>
             MUNDIAL<br />2026
+          </div>
+          <div style={{
+            fontSize: 10, color: C.chalk, opacity: 0.6,
+            marginTop: 8, letterSpacing: ".06em",
+          }}>
+            🔒 Predicciones cerradas · {fechaCierreLabel}
           </div>
         </header>
 
