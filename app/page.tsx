@@ -51,14 +51,19 @@ export default function Home() {
   const ranked = useMemo(() => standings(players, real, extra), [real, extra]);
 
   return (
-    <div style={{ minHeight: "100%", background: C.paper, color: C.ink, fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div style={{ background: C.paper, color: C.ink, fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Tapa fija que siempre cubre la zona de la barra de estado con el verde del header */}
       <div style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
         height: "env(safe-area-inset-top)",
         background: C.pitch,
       }} />
-      <div style={{ maxWidth: 460, margin: "0 auto", paddingBottom: "calc(52px + env(safe-area-inset-bottom))" }}>
+      <div style={{
+        maxWidth: 460, margin: "0 auto",
+        minHeight: "100dvh",
+        display: "flex", flexDirection: "column",
+        paddingBottom: "calc(52px + env(safe-area-inset-bottom))",
+      }}>
 
         {/* Header */}
         <header style={{
@@ -92,7 +97,7 @@ export default function Home() {
         </header>
 
         {/* Content */}
-        <main style={{ padding: "20px" }}>
+        <main style={{ padding: "20px", flex: 1 }}>
           {tab === "clas" && (
             <ClasificacionScreen
               ranked={ranked}
