@@ -60,15 +60,28 @@ export default function Home() {
           borderBottom: `2px solid ${C.ink}`,
           background: `linear-gradient(180deg,${C.pitch} 0%,${C.pitchLit} 100%)`,
         }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-            <div style={{
-              fontFamily: "'Anton', sans-serif", fontSize: 40, color: C.chalk,
-              lineHeight: 0.95, letterSpacing: ".01em",
-            }}>
-              MUNDIAL ⚽<br />2026
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{
+                fontFamily: "'Anton', sans-serif", fontSize: 40, color: C.chalk,
+                lineHeight: 0.95, letterSpacing: ".01em",
+              }}>
+                MUNDIAL<br />2026
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/trionda.jpg"
+                alt="Adidas Trionda"
+                style={{ height: 64, width: "auto", mixBlendMode: "multiply" }}
+              />
             </div>
-            <div style={{ fontSize: 30, lineHeight: 1, display: "flex", gap: 6, paddingTop: 2 }}>
-              🇺🇸🇨🇦🇲🇽
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/flags/us.png" alt="USA" style={{ height: 28, width: "auto" }} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/flags/ca.png" alt="Canadá" style={{ height: 28, width: "auto" }} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/flags/mx.png" alt="México" style={{ height: 28, width: "auto" }} />
             </div>
           </div>
           <div style={{
