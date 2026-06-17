@@ -241,7 +241,7 @@ export default function JornadaScreen({ players, real, youtube }: Props) {
                     const pm = p.fase_grupos.find((m) => m.partido === fixture.partido);
                     if (!pm) return null;
                     const s = r ? scoreMatch(pm.pred, r, GRUPO_PTS) : null;
-                    const hit = s?.hit ?? null;
+                    const hit = (s?.hit ?? null) as "exacto" | "signo" | "fallo" | null;
 
                     return (
                       <div
