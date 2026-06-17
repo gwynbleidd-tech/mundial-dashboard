@@ -1,0 +1,126 @@
+{
+  "equipos": [
+    "Alemania",
+    "Arabia Saudita",
+    "Argelia",
+    "Argentina",
+    "Australia",
+    "Austria",
+    "Bosnia y Herzegovina",
+    "Brasil",
+    "Bélgica",
+    "Cabo Verde",
+    "Canadá",
+    "Catar",
+    "Colombia",
+    "Corea del Sur",
+    "Costa de Marfil",
+    "Croacia",
+    "Curazao",
+    "Ecuador",
+    "Egipto",
+    "Escocia",
+    "España",
+    "Estados Unidos",
+    "Francia",
+    "Ghana",
+    "Haití",
+    "Inglaterra",
+    "Irak",
+    "Irán",
+    "Japón",
+    "Jordania",
+    "Marruecos",
+    "México",
+    "Noruega",
+    "Nueva Zelanda",
+    "Panamá",
+    "Paraguay",
+    "Países Bajos",
+    "Portugal",
+    "RD Congo",
+    "República Checa",
+    "Senegal",
+    "Sudáfrica",
+    "Suecia",
+    "Suiza",
+    "Turquía",
+    "Túnez",
+    "Uruguay",
+    "Uzbekistán"
+  ],
+  "grupos": {
+    "A": [
+      "México",
+      "República Checa",
+      "Corea del Sur",
+      "Sudáfrica"
+    ],
+    "B": [
+      "Bosnia y Herzegovina",
+      "Canadá",
+      "Suiza",
+      "Catar"
+    ],
+    "C": [
+      "Marruecos",
+      "Brasil",
+      "Escocia",
+      "Haití"
+    ],
+    "D": [
+      "Turquía",
+      "Estados Unidos",
+      "Paraguay",
+      "Australia"
+    ],
+    "E": [
+      "Ecuador",
+      "Alemania",
+      "Costa de Marfil",
+      "Curazao"
+    ],
+    "F": [
+      "Japón",
+      "Países Bajos",
+      "Suecia",
+      "Túnez"
+    ],
+    "G": [
+      "Bélgica",
+      "Egipto",
+      "Irán",
+      "Nueva Zelanda"
+    ],
+    "H": [
+      "España",
+      "Uruguay",
+      "Cabo Verde",
+      "Arabia Saudita"
+    ],
+    "I": [
+      "Francia",
+      "Senegal",
+      "Irak",
+      "Noruega"
+    ],
+    "J": [
+      "Argentina",
+      "Argelia",
+      "Austria",
+      "Jordania"
+    ],
+    "K": [
+      "Portugal",
+      "Colombia",
+      "RD Congo",
+      "Uzbekistán"
+    ],
+    "L": [
+      "Inglaterra",
+      "Croacia",
+      "Ghana",
+      "Panamá"
+    ]
+  }
+}

@@ -1,0 +1,1292 @@
+{
+  "enfr_dieciseisavos": [
+    {
+      "partido": "Argentina-Uruguay",
+      "local": "Argentina",
+      "visitante": "Uruguay",
+      "jugadores": [
+        "arroyo",
+        "borja",
+        "aldo",
+        "serra",
+        "jotha",
+        "martin",
+        "pecho",
+        "larios"
+      ]
+    },
+    {
+      "partido": "España-Austria",
+      "local": "España",
+      "visitante": "Austria",
+      "jugadores": [
+        "arroyo",
+        "borja",
+        "serra",
+        "jotha",
+        "martin",
+        "pecho",
+        "larios"
+      ]
+    },
+    {
+      "partido": "Colombia-Croacia",
+      "local": "Colombia",
+      "visitante": "Croacia",
+      "jugadores": [
+        "arroyo",
+        "borja",
+        "aldo",
+        "martin",
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Países Bajos-Marruecos",
+      "local": "Países Bajos",
+      "visitante": "Marruecos",
+      "jugadores": [
+        "arroyo",
+        "serra",
+        "jotha",
+        "pecho",
+        "larios"
+      ]
+    },
+    {
+      "partido": "Portugal-Ghana",
+      "local": "Portugal",
+      "visitante": "Ghana",
+      "jugadores": [
+        "arroyo",
+        "borja",
+        "aldo",
+        "martin",
+        "pecho"
+      ]
+    },
+    {
+      "partido": "México-Costa de Marfil",
+      "local": "México",
+      "visitante": "Costa de Marfil",
+      "jugadores": [
+        "borja",
+        "aldo",
+        "serra",
+        "martin"
+      ]
+    },
+    {
+      "partido": "Brasil-Suecia",
+      "local": "Brasil",
+      "visitante": "Suecia",
+      "jugadores": [
+        "arroyo",
+        "pecho",
+        "larios"
+      ]
+    },
+    {
+      "partido": "Bélgica-República Checa",
+      "local": "Bélgica",
+      "visitante": "República Checa",
+      "jugadores": [
+        "serra",
+        "jotha",
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Inglaterra-RD Congo",
+      "local": "Inglaterra",
+      "visitante": "RD Congo",
+      "jugadores": [
+        "borja",
+        "aldo",
+        "martin"
+      ]
+    },
+    {
+      "partido": "Inglaterra-Senegal",
+      "local": "Inglaterra",
+      "visitante": "Senegal",
+      "jugadores": [
+        "arroyo",
+        "serra",
+        "jotha"
+      ]
+    },
+    {
+      "partido": "República Checa-Canadá",
+      "local": "República Checa",
+      "visitante": "Canadá",
+      "jugadores": [
+        "borja",
+        "aldo",
+        "martin"
+      ]
+    },
+    {
+      "partido": "Suiza-Argelia",
+      "local": "Suiza",
+      "visitante": "Argelia",
+      "jugadores": [
+        "arroyo",
+        "serra",
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Alemania-Escocia",
+      "local": "Alemania",
+      "visitante": "Escocia",
+      "jugadores": [
+        "jotha",
+        "martin"
+      ]
+    },
+    {
+      "partido": "Brasil-Japón",
+      "local": "Brasil",
+      "visitante": "Japón",
+      "jugadores": [
+        "serra",
+        "jotha"
+      ]
+    },
+    {
+      "partido": "Brasil-Países Bajos",
+      "local": "Brasil",
+      "visitante": "Países Bajos",
+      "jugadores": [
+        "borja",
+        "martin"
+      ]
+    },
+    {
+      "partido": "Bélgica-Corea del Sur",
+      "local": "Bélgica",
+      "visitante": "Corea del Sur",
+      "jugadores": [
+        "arroyo",
+        "aldo"
+      ]
+    },
+    {
+      "partido": "Colombia-Ghana",
+      "local": "Colombia",
+      "visitante": "Ghana",
+      "jugadores": [
+        "serra",
+        "jotha"
+      ]
+    },
+    {
+      "partido": "Ecuador-Senegal",
+      "local": "Ecuador",
+      "visitante": "Senegal",
+      "jugadores": [
+        "borja",
+        "martin"
+      ]
+    },
+    {
+      "partido": "Estados Unidos-Bosnia y Herzegovina",
+      "local": "Estados Unidos",
+      "visitante": "Bosnia y Herzegovina",
+      "jugadores": [
+        "serra",
+        "larios"
+      ]
+    },
+    {
+      "partido": "Estados Unidos-Egipto",
+      "local": "Estados Unidos",
+      "visitante": "Egipto",
+      "jugadores": [
+        "aldo",
+        "martin"
+      ]
+    },
+    {
+      "partido": "Francia-Irán",
+      "local": "Francia",
+      "visitante": "Irán",
+      "jugadores": [
+        "serra",
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Francia-Suecia",
+      "local": "Francia",
+      "visitante": "Suecia",
+      "jugadores": [
+        "borja",
+        "jotha"
+      ]
+    },
+    {
+      "partido": "Japón-Marruecos",
+      "local": "Japón",
+      "visitante": "Marruecos",
+      "jugadores": [
+        "borja",
+        "martin"
+      ]
+    },
+    {
+      "partido": "Portugal-Croacia",
+      "local": "Portugal",
+      "visitante": "Croacia",
+      "jugadores": [
+        "serra",
+        "jotha"
+      ]
+    },
+    {
+      "partido": "República Checa-Escocia",
+      "local": "República Checa",
+      "visitante": "Escocia",
+      "jugadores": [
+        "arroyo",
+        "larios"
+      ]
+    },
+    {
+      "partido": "Suiza-Irán",
+      "local": "Suiza",
+      "visitante": "Irán",
+      "jugadores": [
+        "borja",
+        "martin"
+      ]
+    },
+    {
+      "partido": "Turquía-Bosnia y Herzegovina",
+      "local": "Turquía",
+      "visitante": "Bosnia y Herzegovina",
+      "jugadores": [
+        "borja",
+        "martin"
+      ]
+    },
+    {
+      "partido": "Turquía-Egipto",
+      "local": "Turquía",
+      "visitante": "Egipto",
+      "jugadores": [
+        "serra",
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Turquía-Irán",
+      "local": "Turquía",
+      "visitante": "Irán",
+      "jugadores": [
+        "arroyo",
+        "jotha"
+      ]
+    },
+    {
+      "partido": "Alemania-Japón",
+      "local": "Alemania",
+      "visitante": "Japón",
+      "jugadores": [
+        "arroyo"
+      ]
+    },
+    {
+      "partido": "Alemania-Noruega",
+      "local": "Alemania",
+      "visitante": "Noruega",
+      "jugadores": [
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Alemania-Paraguay",
+      "local": "Alemania",
+      "visitante": "Paraguay",
+      "jugadores": [
+        "borja"
+      ]
+    },
+    {
+      "partido": "Alemania-Senegal",
+      "local": "Alemania",
+      "visitante": "Senegal",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "Alemania-Suecia",
+      "local": "Alemania",
+      "visitante": "Suecia",
+      "jugadores": [
+        "serra"
+      ]
+    },
+    {
+      "partido": "Alemania-Turquía",
+      "local": "Alemania",
+      "visitante": "Turquía",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Australia-Irán",
+      "local": "Australia",
+      "visitante": "Irán",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Bosnia y Herzegovina-Austria",
+      "local": "Bosnia y Herzegovina",
+      "visitante": "Austria",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "Bélgica-Arabia Saudita",
+      "local": "Bélgica",
+      "visitante": "Arabia Saudita",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Bélgica-Noruega",
+      "local": "Bélgica",
+      "visitante": "Noruega",
+      "jugadores": [
+        "martin"
+      ]
+    },
+    {
+      "partido": "Canadá-Egipto",
+      "local": "Canadá",
+      "visitante": "Egipto",
+      "jugadores": [
+        "jotha"
+      ]
+    },
+    {
+      "partido": "Colombia-Inglaterra",
+      "local": "Colombia",
+      "visitante": "Inglaterra",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Corea del Sur-Canadá",
+      "local": "Corea del Sur",
+      "visitante": "Canadá",
+      "jugadores": [
+        "serra"
+      ]
+    },
+    {
+      "partido": "Corea del Sur-Suiza",
+      "local": "Corea del Sur",
+      "visitante": "Suiza",
+      "jugadores": [
+        "jotha"
+      ]
+    },
+    {
+      "partido": "Costa de Marfil-Irak",
+      "local": "Costa de Marfil",
+      "visitante": "Irak",
+      "jugadores": [
+        "jotha"
+      ]
+    },
+    {
+      "partido": "Costa de Marfil-Noruega",
+      "local": "Costa de Marfil",
+      "visitante": "Noruega",
+      "jugadores": [
+        "arroyo"
+      ]
+    },
+    {
+      "partido": "Costa de Marfil-Senegal",
+      "local": "Costa de Marfil",
+      "visitante": "Senegal",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Croacia-RD Congo",
+      "local": "Croacia",
+      "visitante": "RD Congo",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Ecuador-Escocia",
+      "local": "Ecuador",
+      "visitante": "Escocia",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "Ecuador-Estados Unidos",
+      "local": "Ecuador",
+      "visitante": "Estados Unidos",
+      "jugadores": [
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Ecuador-Noruega",
+      "local": "Ecuador",
+      "visitante": "Noruega",
+      "jugadores": [
+        "serra"
+      ]
+    },
+    {
+      "partido": "Egipto-Noruega",
+      "local": "Egipto",
+      "visitante": "Noruega",
+      "jugadores": [
+        "borja"
+      ]
+    },
+    {
+      "partido": "España-Argelia",
+      "local": "España",
+      "visitante": "Argelia",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "Estados Unidos-Bélgica",
+      "local": "Estados Unidos",
+      "visitante": "Bélgica",
+      "jugadores": [
+        "borja"
+      ]
+    },
+    {
+      "partido": "Estados Unidos-Canadá",
+      "local": "Estados Unidos",
+      "visitante": "Canadá",
+      "jugadores": [
+        "arroyo"
+      ]
+    },
+    {
+      "partido": "Estados Unidos-Ecuador",
+      "local": "Estados Unidos",
+      "visitante": "Ecuador",
+      "jugadores": [
+        "jotha"
+      ]
+    },
+    {
+      "partido": "Francia-Arabia Saudita",
+      "local": "Francia",
+      "visitante": "Arabia Saudita",
+      "jugadores": [
+        "martin"
+      ]
+    },
+    {
+      "partido": "Francia-Egipto",
+      "local": "Francia",
+      "visitante": "Egipto",
+      "jugadores": [
+        "arroyo"
+      ]
+    },
+    {
+      "partido": "Francia-Japón",
+      "local": "Francia",
+      "visitante": "Japón",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Francia-Paraguay",
+      "local": "Francia",
+      "visitante": "Paraguay",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "Inglaterra-Costa de Marfil",
+      "local": "Inglaterra",
+      "visitante": "Costa de Marfil",
+      "jugadores": [
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Japón-Brasil",
+      "local": "Japón",
+      "visitante": "Brasil",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "Marruecos-Países Bajos",
+      "local": "Marruecos",
+      "visitante": "Países Bajos",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "México-Arabia Saudita",
+      "local": "México",
+      "visitante": "Arabia Saudita",
+      "jugadores": [
+        "pecho"
+      ]
+    },
+    {
+      "partido": "México-Bosnia y Herzegovina",
+      "local": "México",
+      "visitante": "Bosnia y Herzegovina",
+      "jugadores": [
+        "arroyo"
+      ]
+    },
+    {
+      "partido": "México-Cabo Verde",
+      "local": "México",
+      "visitante": "Cabo Verde",
+      "jugadores": [
+        "jotha"
+      ]
+    },
+    {
+      "partido": "México-Canadá",
+      "local": "México",
+      "visitante": "Canadá",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Paraguay-Bosnia y Herzegovina",
+      "local": "Paraguay",
+      "visitante": "Bosnia y Herzegovina",
+      "jugadores": [
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Portugal-Noruega",
+      "local": "Portugal",
+      "visitante": "Noruega",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Sudáfrica-Canadá",
+      "local": "Sudáfrica",
+      "visitante": "Canadá",
+      "jugadores": [
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Suiza-Ecuador",
+      "local": "Suiza",
+      "visitante": "Ecuador",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Turquía-Suiza",
+      "local": "Turquía",
+      "visitante": "Suiza",
+      "jugadores": [
+        "aldo"
+      ]
+    }
+  ],
+  "enfr_octavos": [
+    {
+      "partido": "Alemania-Francia",
+      "local": "Alemania",
+      "visitante": "Francia",
+      "jugadores": [
+        "arroyo",
+        "borja",
+        "serra",
+        "jotha",
+        "martin",
+        "larios"
+      ]
+    },
+    {
+      "partido": "Colombia-España",
+      "local": "Colombia",
+      "visitante": "España",
+      "jugadores": [
+        "arroyo",
+        "borja",
+        "aldo",
+        "serra",
+        "jotha",
+        "martin"
+      ]
+    },
+    {
+      "partido": "Suiza-Portugal",
+      "local": "Suiza",
+      "visitante": "Portugal",
+      "jugadores": [
+        "arroyo",
+        "borja",
+        "serra",
+        "martin",
+        "pecho"
+      ]
+    },
+    {
+      "partido": "México-Inglaterra",
+      "local": "México",
+      "visitante": "Inglaterra",
+      "jugadores": [
+        "borja",
+        "serra",
+        "jotha",
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Argentina-Egipto",
+      "local": "Argentina",
+      "visitante": "Egipto",
+      "jugadores": [
+        "aldo",
+        "martin",
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Argentina-Turquía",
+      "local": "Argentina",
+      "visitante": "Turquía",
+      "jugadores": [
+        "arroyo",
+        "serra",
+        "jotha"
+      ]
+    },
+    {
+      "partido": "Brasil-Senegal",
+      "local": "Brasil",
+      "visitante": "Senegal",
+      "jugadores": [
+        "borja",
+        "martin",
+        "larios"
+      ]
+    },
+    {
+      "partido": "Estados Unidos-Bélgica",
+      "local": "Estados Unidos",
+      "visitante": "Bélgica",
+      "jugadores": [
+        "arroyo",
+        "jotha",
+        "larios"
+      ]
+    },
+    {
+      "partido": "Costa de Marfil-Inglaterra",
+      "local": "Costa de Marfil",
+      "visitante": "Inglaterra",
+      "jugadores": [
+        "aldo",
+        "martin"
+      ]
+    },
+    {
+      "partido": "Ecuador-Francia",
+      "local": "Ecuador",
+      "visitante": "Francia",
+      "jugadores": [
+        "aldo",
+        "pecho"
+      ]
+    },
+    {
+      "partido": "México-Países Bajos",
+      "local": "México",
+      "visitante": "Países Bajos",
+      "jugadores": [
+        "arroyo",
+        "larios"
+      ]
+    },
+    {
+      "partido": "Argentina-Australia",
+      "local": "Argentina",
+      "visitante": "Australia",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Argentina-Estados Unidos",
+      "local": "Argentina",
+      "visitante": "Estados Unidos",
+      "jugadores": [
+        "borja"
+      ]
+    },
+    {
+      "partido": "Austria-Portugal",
+      "local": "Austria",
+      "visitante": "Portugal",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "Bosnia y Herzegovina-Bélgica",
+      "local": "Bosnia y Herzegovina",
+      "visitante": "Bélgica",
+      "jugadores": [
+        "serra"
+      ]
+    },
+    {
+      "partido": "Brasil-Alemania",
+      "local": "Brasil",
+      "visitante": "Alemania",
+      "jugadores": [
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Brasil-Costa de Marfil",
+      "local": "Brasil",
+      "visitante": "Costa de Marfil",
+      "jugadores": [
+        "arroyo"
+      ]
+    },
+    {
+      "partido": "Brasil-Irak",
+      "local": "Brasil",
+      "visitante": "Irak",
+      "jugadores": [
+        "jotha"
+      ]
+    },
+    {
+      "partido": "Brasil-Noruega",
+      "local": "Brasil",
+      "visitante": "Noruega",
+      "jugadores": [
+        "serra"
+      ]
+    },
+    {
+      "partido": "Canadá-Brasil",
+      "local": "Canadá",
+      "visitante": "Brasil",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "Canadá-Marruecos",
+      "local": "Canadá",
+      "visitante": "Marruecos",
+      "jugadores": [
+        "borja"
+      ]
+    },
+    {
+      "partido": "Canadá-Portugal",
+      "local": "Canadá",
+      "visitante": "Portugal",
+      "jugadores": [
+        "jotha"
+      ]
+    },
+    {
+      "partido": "Corea del Sur-Marruecos",
+      "local": "Corea del Sur",
+      "visitante": "Marruecos",
+      "jugadores": [
+        "serra"
+      ]
+    },
+    {
+      "partido": "Corea del Sur-Países Bajos",
+      "local": "Corea del Sur",
+      "visitante": "Países Bajos",
+      "jugadores": [
+        "jotha"
+      ]
+    },
+    {
+      "partido": "Croacia-España",
+      "local": "Croacia",
+      "visitante": "España",
+      "jugadores": [
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Ecuador-Portugal",
+      "local": "Ecuador",
+      "visitante": "Portugal",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Escocia-Inglaterra",
+      "local": "Escocia",
+      "visitante": "Inglaterra",
+      "jugadores": [
+        "arroyo"
+      ]
+    },
+    {
+      "partido": "Inglaterra-España",
+      "local": "Inglaterra",
+      "visitante": "España",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Paraguay-Bélgica",
+      "local": "Paraguay",
+      "visitante": "Bélgica",
+      "jugadores": [
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Países Bajos-Senegal",
+      "local": "Países Bajos",
+      "visitante": "Senegal",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "República Checa-Croacia",
+      "local": "República Checa",
+      "visitante": "Croacia",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "República Checa-Marruecos",
+      "local": "República Checa",
+      "visitante": "Marruecos",
+      "jugadores": [
+        "martin"
+      ]
+    },
+    {
+      "partido": "Sudáfrica-Marruecos",
+      "local": "Sudáfrica",
+      "visitante": "Marruecos",
+      "jugadores": [
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Suiza-Bélgica",
+      "local": "Suiza",
+      "visitante": "Bélgica",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "Turquía-Bélgica",
+      "local": "Turquía",
+      "visitante": "Bélgica",
+      "jugadores": [
+        "martin"
+      ]
+    },
+    {
+      "partido": "Turquía-Egipto",
+      "local": "Turquía",
+      "visitante": "Egipto",
+      "jugadores": [
+        "borja"
+      ]
+    }
+  ],
+  "enfr_cuartos": [
+    {
+      "partido": "Argentina-Portugal",
+      "local": "Argentina",
+      "visitante": "Portugal",
+      "jugadores": [
+        "borja",
+        "serra",
+        "jotha",
+        "martin",
+        "pecho",
+        "larios"
+      ]
+    },
+    {
+      "partido": "Brasil-Inglaterra",
+      "local": "Brasil",
+      "visitante": "Inglaterra",
+      "jugadores": [
+        "arroyo",
+        "borja",
+        "jotha",
+        "martin"
+      ]
+    },
+    {
+      "partido": "España-Bélgica",
+      "local": "España",
+      "visitante": "Bélgica",
+      "jugadores": [
+        "arroyo",
+        "serra",
+        "pecho",
+        "larios"
+      ]
+    },
+    {
+      "partido": "Francia-Marruecos",
+      "local": "Francia",
+      "visitante": "Marruecos",
+      "jugadores": [
+        "serra",
+        "martin",
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Alemania-Países Bajos",
+      "local": "Alemania",
+      "visitante": "Países Bajos",
+      "jugadores": [
+        "jotha",
+        "larios"
+      ]
+    },
+    {
+      "partido": "España-Turquía",
+      "local": "España",
+      "visitante": "Turquía",
+      "jugadores": [
+        "borja",
+        "martin"
+      ]
+    },
+    {
+      "partido": "Alemania-Inglaterra",
+      "local": "Alemania",
+      "visitante": "Inglaterra",
+      "jugadores": [
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Alemania-Marruecos",
+      "local": "Alemania",
+      "visitante": "Marruecos",
+      "jugadores": [
+        "borja"
+      ]
+    },
+    {
+      "partido": "Argentina-Austria",
+      "local": "Argentina",
+      "visitante": "Austria",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "Brasil-Croacia",
+      "local": "Brasil",
+      "visitante": "Croacia",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Colombia-Bélgica",
+      "local": "Colombia",
+      "visitante": "Bélgica",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "España-Estados Unidos",
+      "local": "España",
+      "visitante": "Estados Unidos",
+      "jugadores": [
+        "jotha"
+      ]
+    },
+    {
+      "partido": "Francia-Brasil",
+      "local": "Francia",
+      "visitante": "Brasil",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "Francia-Países Bajos",
+      "local": "Francia",
+      "visitante": "Países Bajos",
+      "jugadores": [
+        "arroyo"
+      ]
+    },
+    {
+      "partido": "Noruega-Inglaterra",
+      "local": "Noruega",
+      "visitante": "Inglaterra",
+      "jugadores": [
+        "serra"
+      ]
+    },
+    {
+      "partido": "Países Bajos-Inglaterra",
+      "local": "Países Bajos",
+      "visitante": "Inglaterra",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "Turquía-Portugal",
+      "local": "Turquía",
+      "visitante": "Portugal",
+      "jugadores": [
+        "arroyo"
+      ]
+    }
+  ],
+  "enfr_semis": [
+    {
+      "partido": "Brasil-Portugal",
+      "local": "Brasil",
+      "visitante": "Portugal",
+      "jugadores": [
+        "borja",
+        "jotha",
+        "martin"
+      ]
+    },
+    {
+      "partido": "Francia-España",
+      "local": "Francia",
+      "visitante": "España",
+      "jugadores": [
+        "serra",
+        "martin",
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Inglaterra-Portugal",
+      "local": "Inglaterra",
+      "visitante": "Portugal",
+      "jugadores": [
+        "arroyo",
+        "serra",
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Países Bajos-España",
+      "local": "Países Bajos",
+      "visitante": "España",
+      "jugadores": [
+        "arroyo",
+        "jotha"
+      ]
+    },
+    {
+      "partido": "Alemania-España",
+      "local": "Alemania",
+      "visitante": "España",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Brasil-Argentina",
+      "local": "Brasil",
+      "visitante": "Argentina",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Francia-Colombia",
+      "local": "Francia",
+      "visitante": "Colombia",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "Marruecos-España",
+      "local": "Marruecos",
+      "visitante": "España",
+      "jugadores": [
+        "borja"
+      ]
+    },
+    {
+      "partido": "Países Bajos-Argentina",
+      "local": "Países Bajos",
+      "visitante": "Argentina",
+      "jugadores": [
+        "aldo"
+      ]
+    }
+  ],
+  "enfr_3y4": [
+    {
+      "partido": "España-Inglaterra",
+      "local": "España",
+      "visitante": "Inglaterra",
+      "jugadores": [
+        "arroyo",
+        "serra"
+      ]
+    },
+    {
+      "partido": "Alemania-Argentina",
+      "local": "Alemania",
+      "visitante": "Argentina",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Colombia-Países Bajos",
+      "local": "Colombia",
+      "visitante": "Países Bajos",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "España-Brasil",
+      "local": "España",
+      "visitante": "Brasil",
+      "jugadores": [
+        "martin"
+      ]
+    },
+    {
+      "partido": "España-Portugal",
+      "local": "España",
+      "visitante": "Portugal",
+      "jugadores": [
+        "jotha"
+      ]
+    },
+    {
+      "partido": "Francia-Inglaterra",
+      "local": "Francia",
+      "visitante": "Inglaterra",
+      "jugadores": [
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Marruecos-Brasil",
+      "local": "Marruecos",
+      "visitante": "Brasil",
+      "jugadores": [
+        "borja"
+      ]
+    }
+  ],
+  "enfr_final": [
+    {
+      "partido": "España-Portugal",
+      "local": "España",
+      "visitante": "Portugal",
+      "jugadores": [
+        "borja",
+        "pecho"
+      ]
+    },
+    {
+      "partido": "Francia-Portugal",
+      "local": "Francia",
+      "visitante": "Portugal",
+      "jugadores": [
+        "serra",
+        "martin"
+      ]
+    },
+    {
+      "partido": "España-Brasil",
+      "local": "España",
+      "visitante": "Brasil",
+      "jugadores": [
+        "larios"
+      ]
+    },
+    {
+      "partido": "Francia-Argentina",
+      "local": "Francia",
+      "visitante": "Argentina",
+      "jugadores": [
+        "aldo"
+      ]
+    },
+    {
+      "partido": "Países Bajos-Brasil",
+      "local": "Países Bajos",
+      "visitante": "Brasil",
+      "jugadores": [
+        "jotha"
+      ]
+    },
+    {
+      "partido": "Países Bajos-Portugal",
+      "local": "Países Bajos",
+      "visitante": "Portugal",
+      "jugadores": [
+        "arroyo"
+      ]
+    }
+  ]
+}

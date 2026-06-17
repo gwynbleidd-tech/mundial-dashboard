@@ -58,3 +58,19 @@ export async function setYoutubeUrl(partido: string, youtube_url: string | null)
     .upsert({ partido, youtube_url }, { onConflict: "partido" });
   if (error) throw error;
 }
+
+/** Guarda/actualiza un valor extra (cuadro de honor, posiciones, clasificados). */
+export async function setExtra(clave: string, valor: string) {
+  const { error } = await supabase
+    .from("resultados_extra")
+    .upsert({ clave, valor }, { onConflict: "clave" });
+  if (error) throw error;
+}
+
+/** Vacía un valor extra (honor/posición) poniéndolo a ""; el motor ignora valores vacíos. */
+export async function clearExtra(clave: string) {
+  const { error } = await supabase
+    .from("resultados_extra")
+    .upsert({ clave, valor: "" }, { onConflict: "clave" });
+  if (error) throw error;
+}

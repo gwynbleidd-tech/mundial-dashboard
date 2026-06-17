@@ -133,7 +133,7 @@ export function scorePlayer(p: Player, real: RealResults, extra: RealExtra = {})
   return { grupos, posiciones, clasificados, eliminatorias, honor, total, exactos, signos, partidosJugados: jugados };
 }
 
-function normPos(puesto: string): string {
+export function normPos(puesto: string): string {
   // "1º GRUPO A" -> "1_GRUPO_A"
   return puesto.replace("º", "").replace(/\s+/g, "_").toUpperCase();
 }

@@ -1403,17 +1403,17 @@
         "campeon": "Portugal",
         "subcampeon": "Países Bajos",
         "tercero": "España",
-        "bota_oro": "Vini Jr",
-        "bota_plata": "Mbappe",
+        "bota_oro": "Vinicius Jr.",
+        "bota_plata": "Kylian Mbappé",
         "bota_bronce": "Julián Álvarez",
         "balon_oro": "Vitinha",
         "balon_plata": "Lamine Yamal",
-        "balon_bronce": "Vini Jr"
+        "balon_bronce": "Vinicius Jr."
       }
     },
     "borja": {
       "id": "borja",
-      "nombre": "ochAIta",
+      "nombre": "OchAIta",
       "fase_grupos": [
         {
           "partido": "México-Sudáfrica",
@@ -2814,9 +2814,9 @@
         "campeon": "España",
         "subcampeon": "Portugal",
         "tercero": "Marruecos",
-        "bota_oro": "Mbappe",
+        "bota_oro": "Kylian Mbappé",
         "bota_plata": "Rapinha",
-        "bota_bronce": "Oyarzabal",
+        "bota_bronce": "Oyarzábal",
         "balon_oro": "Pedri",
         "balon_plata": "Vitinha",
         "balon_bronce": "Lamine Yamal"
@@ -4235,7 +4235,7 @@
     },
     "serra": {
       "id": "serra",
-      "nombre": "Dani",
+      "nombre": "Serrix",
       "fase_grupos": [
         {
           "partido": "México-Sudáfrica",
@@ -7047,17 +7047,17 @@
         "campeon": "Brasil",
         "subcampeon": "Países Bajos",
         "tercero": "Portugal",
-        "bota_oro": "RAPHINHA",
-        "bota_plata": "FERRAN TORRES",
-        "bota_bronce": "HAVERTZ",
-        "balon_oro": "VINI JR",
-        "balon_plata": "MESSI",
-        "balon_bronce": null
+        "bota_oro": "Rapinha",
+        "bota_plata": "Ferrán Torres",
+        "bota_bronce": "Kai Havertz",
+        "balon_oro": "Vinicius Jr.",
+        "balon_plata": "Lionel Messi",
+        "balon_bronce": "Rapinha"
       }
     },
     "martin": {
       "id": "martin",
-      "nombre": "Martin",
+      "nombre": "Martín",
       "fase_grupos": [
         {
           "partido": "México-Sudáfrica",
@@ -9869,9 +9869,9 @@
         "campeon": "España",
         "subcampeon": "Portugal",
         "tercero": "Francia",
-        "bota_oro": "Mbappe",
+        "bota_oro": "Kylian Mbappé",
         "bota_plata": "Harry Kane",
-        "bota_bronce": "Oyarzabal ",
+        "bota_bronce": "Oyarzábal ",
         "balon_oro": "Pedri",
         "balon_plata": "Marc Pubill",
         "balon_bronce": "Vitinha"
@@ -11281,10 +11281,10 @@
         "subcampeon": "Brasil",
         "tercero": "Argentina",
         "bota_oro": "Lamine Yamal",
-        "bota_plata": "Lionel messi",
-        "bota_bronce": "mbappe",
-        "balon_oro": "Messi",
-        "balon_plata": "mbappe",
+        "bota_plata": "Lionel Messi",
+        "bota_bronce": "Kylian Mbappé",
+        "balon_oro": "Lionel Messi",
+        "balon_plata": "Kylian Mbappé",
         "balon_bronce": "Lamine Yamal"
       }
     }

@@ -105,8 +105,15 @@ export default function Home() {
             <AdminScreen
               players={players}
               real={real}
+              extra={extra}
               onResultSaved={(partido, local, visitante) =>
                 setReal((prev) => ({ ...prev, [partido]: { local, visitante } }))
+              }
+              onResultCleared={(partido) =>
+                setReal((prev) => { const n = { ...prev }; delete n[partido]; return n; })
+              }
+              onExtraSaved={(clave, valor) =>
+                setExtra((prev) => ({ ...prev, [clave]: valor }))
               }
             />
           )}
