@@ -60,17 +60,18 @@ function ShareButton({ ranked }: { ranked: RankedEntry[] }) {
       onClick={handleShare}
       style={{
         display: "flex", alignItems: "center", gap: 6,
-        marginBottom: 16,
-        padding: "8px 16px",
-        border: `1px solid ${C.pitch}`,
-        borderRadius: 8,
-        background: status === "copied" ? C.pitch : "transparent",
-        color: status === "copied" ? C.chalk : C.pitch,
-        fontWeight: 700, fontSize: 13, cursor: "pointer",
-        transition: "background .2s, color .2s",
+        padding: "7px 14px",
+        border: `1px solid ${C.line}`,
+        borderRadius: 20,
+        background: "none",
+        cursor: "pointer",
+        fontSize: 13,
+        color: status === "copied" ? C.pitch : C.muted,
+        fontWeight: status === "copied" ? 700 : 400,
+        transition: "color .2s, border-color .2s",
       }}
     >
-      {status === "copied" ? "✓ Copiado" : "Compartir clasificación"}
+      {status === "copied" ? "✓ Copiado" : <><span style={{ fontSize: 15 }}>📤</span> Compartir</>}
     </button>
   );
 }
@@ -91,9 +92,6 @@ export default function ClasificacionScreen({ ranked, loading, onPick }: Props) 
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <ShareButton ranked={ranked} />
-      </div>
       {maxPts === 0 && (
         <p style={{
           fontSize: 12, color: C.muted, textAlign: "center",
@@ -163,6 +161,9 @@ export default function ClasificacionScreen({ ranked, loading, onPick }: Props) 
           </button>
         );
       })}
+      <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
+        <ShareButton ranked={ranked} />
+      </div>
     </div>
   );
 }
