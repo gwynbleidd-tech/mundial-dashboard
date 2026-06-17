@@ -85,6 +85,9 @@ export default function Home() {
           {tab === "clas" && (
             <ClasificacionScreen
               ranked={ranked}
+              players={players}
+              real={real}
+              extra={extra}
               loading={loading}
               onPick={(id) => { setPicked(id); setTab("jug"); }}
             />
