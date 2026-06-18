@@ -6,6 +6,8 @@ import type { Player, Breakdown, RealResults, RealExtra } from "@/lib/scoring";
 import { buildEvolutionByDay, buildEvolutionByMatch } from "@/lib/evolution";
 import { C } from "@/lib/theme";
 import type { HighlightMode } from "@/lib/highlight";
+import { computeBadges, BADGES } from "@/lib/badges";
+import type { PlayerBadge } from "@/lib/badges";
 
 const EvolucionChart = dynamic(() => import("@/components/EvolucionChart"), { ssr: false });
 
@@ -93,6 +95,87 @@ function ShareButton({ ranked }: { ranked: RankedEntry[] }) {
   );
 }
 
+// ---- Panel de insignias ----
+
+function BadgesPanel({ badges, onClose }: { badges: PlayerBadge[]; onClose: () => void }) {
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 200,
+        background: "rgba(14,26,43,0.55)",
+        display: "flex", alignItems: "flex-end", justifyContent: "center",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: "100%", maxWidth: 460,
+          background: C.paper,
+          borderRadius: "16px 16px 0 0",
+          padding: "20px 20px calc(20px + env(safe-area-inset-bottom))",
+          maxHeight: "80vh",
+          overflowY: "auto",
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <span style={{ fontFamily: "'Anton', sans-serif", fontSize: 20, letterSpacing: ".02em", color: C.ink }}>
+            INSIGNIAS
+          </span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: C.muted, padding: "4px 8px" }}>
+            ✕
+          </button>
+        </div>
+
+        {BADGES.map(badge => {
+          const awarded = badges.find(b => b.badge.id === badge.id);
+          return (
+            <div key={badge.id} style={{
+              display: "flex", gap: 12, alignItems: "flex-start",
+              padding: "12px 0",
+              borderBottom: `1px solid ${C.line}`,
+              opacity: awarded ? 1 : 0.4,
+            }}>
+              <div style={{ fontSize: 28, lineHeight: 1, flexShrink: 0, width: 36, textAlign: "center" }}>
+                {badge.emoji}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 700, fontSize: 14, color: C.ink }}>{badge.name}</span>
+                  {awarded && (
+                    <span style={{
+                      fontSize: 12, fontWeight: 700,
+                      color: badge.positive ? C.pitch : C.rojo,
+                      background: badge.positive ? "#e8f5ee" : "#fdecea",
+                      borderRadius: 10, padding: "1px 8px",
+                    }}>
+                      {awarded.playerName}
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 11.5, color: C.muted, marginTop: 2 }}>{badge.description}</div>
+                {awarded && (
+                  <div style={{
+                    fontSize: 11, color: badge.positive ? C.pitch : C.rojo,
+                    marginTop: 4, fontFamily: "'DM Mono', monospace", letterSpacing: ".01em",
+                  }}>
+                    {awarded.detail}
+                  </div>
+                )}
+                {!awarded && (
+                  <div style={{ fontSize: 11, color: C.muted, marginTop: 4, fontStyle: "italic" }}>
+                    Sin asignar aún
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 const HIGHLIGHT_TOGGLES: { id: HighlightMode; label: string; emoji: string; color: string }[] = [
   { id: "gloria", label: "Camino a la gloria", emoji: "🏆", color: C.gold },
   { id: "pozo",   label: "Huyendo del pozo",   emoji: "🪣", color: C.rojo },
@@ -101,6 +184,24 @@ const HIGHLIGHT_TOGGLES: { id: HighlightMode; label: string; emoji: string; colo
 export default function ClasificacionScreen({ ranked, players, real, extra, loading, onPick }: Props) {
   const [view, setView] = useState<View>("general");
   const [highlightMode, setHighlightMode] = useState<HighlightMode>("none");
+  const [showBadges, setShowBadges] = useState(false);
+
+  const rankedIds = ranked.map(r => r.player.id);
+
+  const badges = useMemo(
+    () => computeBadges(players, real, extra, rankedIds),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [players, real, extra, rankedIds.join(",")],
+  );
+
+  const badgesByPlayer = useMemo(() => {
+    const map: Record<string, PlayerBadge[]> = {};
+    for (const b of badges) {
+      if (!map[b.playerId]) map[b.playerId] = [];
+      map[b.playerId].push(b);
+    }
+    return map;
+  }, [badges]);
 
   function toggleHighlight(id: HighlightMode) {
     setHighlightMode(prev => prev === id ? "none" : id);
@@ -218,6 +319,16 @@ export default function ClasificacionScreen({ ranked, players, real, extra, load
                       transition: "width .4s ease",
                     }} />
                   </div>
+                  {/* Emojis de insignias */}
+                  {(badgesByPlayer[r.player.id] ?? []).length > 0 && (
+                    <div style={{ display: "flex", gap: 3, marginTop: 5, flexWrap: "wrap" }}>
+                      {(badgesByPlayer[r.player.id] ?? []).map(pb => (
+                        <span key={pb.badge.id} style={{ fontSize: 14, lineHeight: 1 }} title={pb.badge.name}>
+                          {pb.badge.emoji}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
                   <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 24, color: C.ink, lineHeight: 1 }}>
@@ -237,8 +348,23 @@ export default function ClasificacionScreen({ ranked, players, real, extra, load
               </button>
             );
           })}
-          <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 20 }}>
             <ShareButton ranked={ranked} />
+            <button
+              onClick={() => setShowBadges(true)}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "7px 14px",
+                border: `1px solid ${C.line}`,
+                borderRadius: 20,
+                background: "none",
+                cursor: "pointer",
+                fontSize: 13,
+                color: C.muted,
+              }}
+            >
+              <span style={{ fontSize: 15 }}>🏅</span> Insignias
+            </button>
           </div>
         </>
       )}
@@ -282,6 +408,11 @@ export default function ClasificacionScreen({ ranked, players, real, extra, load
             highlightMode={highlightMode}
           />
         </div>
+      )}
+
+      {/* Panel de insignias */}
+      {showBadges && (
+        <BadgesPanel badges={badges} onClose={() => setShowBadges(false)} />
       )}
     </div>
   );
