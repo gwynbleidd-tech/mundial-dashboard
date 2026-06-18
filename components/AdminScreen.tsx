@@ -3,7 +3,11 @@
 import { useState, useEffect, useMemo } from "react";
 import type { Player, RealResults, RealExtra } from "@/lib/scoring";
 import { normPos } from "@/lib/scoring";
-import { setResultado, setExtra as supaSetExtra, clearExtra as supaClearExtra, setYoutubeUrl, type YoutubeUrls } from "@/lib/supabase";
+import {
+  setResultado, setExtra as supaSetExtra, clearExtra as supaClearExtra,
+  setYoutubeUrl, type YoutubeUrls,
+  fetchPortadas, uploadPortada, deletePortada, type Portada,
+} from "@/lib/supabase";
 import teamsData from "@/data/teams.json";
 import crusesData from "@/data/cruces_eliminatoria.json";
 import { C } from "@/lib/theme";
@@ -53,7 +57,17 @@ const ADMIN_TABS = [
   { id: "honor",          label: "Honor"         },
   { id: "posiciones",     label: "Posiciones"    },
   { id: "clasificados",   label: "Clasificados"  },
+  { id: "portadas",       label: "Portadas"      },
 ] as const;
+
+function getTodayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function formatFechaShort(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+}
 
 const { equipos: ALL_TEAMS, grupos: GRUPOS_EQUIPOS } = teamsData as {
   equipos: string[];
@@ -241,6 +255,17 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
   const [clasifSels, setClasifSels] = useState<Record<string, Set<string>>>({});
   const [clasifStatus, setClasifStatus] = useState<Record<string, RowStatus>>({});
   const [clasifRonda, setClasifRonda] = useState("dieciseisavos");
+
+  // ── Portadas state ──
+  const [portadasList, setPortadasList] = useState<Portada[]>([]);
+  const [portadasLoading, setPortadasLoading] = useState(false);
+  const [portFile, setPortFile] = useState<File | null>(null);
+  const [portFileKey, setPortFileKey] = useState(0);
+  const [portTitulo, setPortTitulo] = useState("");
+  const [portFecha, setPortFecha] = useState(getTodayISO());
+  const [portUploadStatus, setPortUploadStatus] = useState<RowStatus>("idle");
+  const [portUploadError, setPortUploadError] = useState("");
+  const [confirmDeletePortada, setConfirmDeletePortada] = useState<number | null>(null);
 
   function switchTab(id: typeof adminTab) {
     setAdminTab(id);
@@ -466,6 +491,43 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
       onExtraSaved("clasif_" + ronda, []);
     } catch {
       setClasifStatus((prev) => ({ ...prev, [ronda]: "error" }));
+    }
+  }
+
+  // ── Portadas helpers ──
+  useEffect(() => {
+    if (adminTab !== "portadas") return;
+    setPortadasLoading(true);
+    fetchPortadas().then(setPortadasList).catch(() => {}).finally(() => setPortadasLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminTab]);
+
+  async function handleUploadPortada() {
+    if (!portFile) return;
+    setPortUploadStatus("saving");
+    setPortUploadError("");
+    try {
+      const portada = await uploadPortada(portFile, portTitulo, portFecha);
+      setPortadasList((prev) => [portada, ...prev]);
+      setPortFile(null);
+      setPortFileKey((k) => k + 1);
+      setPortTitulo("");
+      setPortFecha(getTodayISO());
+      setPortUploadStatus("saved");
+      setTimeout(() => setPortUploadStatus("idle"), 2000);
+    } catch (e) {
+      setPortUploadError(e instanceof Error ? e.message : "Error al subir");
+      setPortUploadStatus("error");
+    }
+  }
+
+  async function handleDeletePortada(id: number, storage_path: string) {
+    setConfirmDeletePortada(null);
+    try {
+      await deletePortada(id, storage_path);
+      setPortadasList((prev) => prev.filter((p) => p.id !== id));
+    } catch {
+      // ignore — UI keeps the item; user can retry
     }
   }
 
@@ -947,6 +1009,142 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
           </div>
         );
       })()}
+      {/* ── PORTADAS ── */}
+      {adminTab === "portadas" && (() => {
+        const fileError = portFile && !portFile.type.startsWith("image/");
+        const sizeWarning = portFile && !fileError && portFile.size > 5 * 1024 * 1024;
+        const canUpload = !!portFile && !fileError && portUploadStatus !== "saving";
+
+        return (
+          <div>
+            {/* Upload form */}
+            <p style={subStyle}>Subir nueva portada.</p>
+            <div style={{ marginTop: 14 }}>
+
+              {/* File picker */}
+              <input
+                key={portFileKey}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  setPortFile(e.target.files?.[0] ?? null);
+                  setPortUploadStatus("idle");
+                  setPortUploadError("");
+                }}
+                style={{ fontSize: 12.5, marginBottom: 6, display: "block" }}
+              />
+              {fileError && (
+                <p style={{ fontSize: 11, color: C.rojo, margin: "0 0 6px" }}>Solo se admiten imágenes.</p>
+              )}
+              {sizeWarning && (
+                <p style={{ fontSize: 11, color: "#9A6700", margin: "0 0 6px" }}>El archivo supera 5 MB — puede tardar.</p>
+              )}
+
+              {/* Title */}
+              <input
+                type="text"
+                value={portTitulo}
+                onChange={(e) => setPortTitulo(e.target.value)}
+                placeholder="Título (opcional)"
+                style={{ ...selStyle, width: "100%", boxSizing: "border-box" as const, marginBottom: 8 }}
+              />
+
+              {/* Date */}
+              <input
+                type="date"
+                value={portFecha}
+                onChange={(e) => setPortFecha(e.target.value)}
+                style={{ ...selStyle, width: "auto", marginBottom: 12 }}
+              />
+
+              {/* Upload button */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <button
+                  onClick={handleUploadPortada}
+                  disabled={!canUpload}
+                  style={{
+                    padding: "6px 16px", borderRadius: 3, fontSize: 12, fontWeight: 700,
+                    border: "none", cursor: canUpload ? "pointer" : "default",
+                    background: portUploadStatus === "saved" ? "#E6F0E9"
+                      : portUploadStatus === "error" ? "#F5E6E6"
+                      : canUpload ? C.pitch : C.line,
+                    color: portUploadStatus === "saved" ? "#1B5E3A"
+                      : portUploadStatus === "error" ? C.rojo
+                      : canUpload ? C.chalk : C.muted,
+                  }}
+                >
+                  {portUploadStatus === "saving" ? "…"
+                    : portUploadStatus === "saved" ? "✓ Subida"
+                    : portUploadStatus === "error" ? "Error"
+                    : "Subir"}
+                </button>
+                {portUploadError && (
+                  <span style={{ fontSize: 11, color: C.rojo }}>{portUploadError}</span>
+                )}
+              </div>
+            </div>
+
+            {/* Portadas list */}
+            <div style={{ marginTop: 28 }}>
+              <p style={{ ...subStyle, marginBottom: 10 }}>
+                {portadasList.length} portada{portadasList.length !== 1 ? "s" : ""} subida{portadasList.length !== 1 ? "s" : ""}
+              </p>
+              {portadasLoading ? (
+                <p style={{ color: C.muted, fontSize: 13 }}>Cargando…</p>
+              ) : portadasList.length === 0 ? (
+                <p style={{ color: C.muted, fontSize: 13 }}>No hay portadas aún.</p>
+              ) : (
+                <div>
+                  {portadasList.map((p) => {
+                    const confirming = confirmDeletePortada === p.id;
+                    return (
+                      <div key={p.id}>
+                        <div style={{
+                          display: "flex", alignItems: "center", gap: 10,
+                          padding: "10px 0",
+                          borderBottom: confirming ? "none" : `1px solid ${C.line}`,
+                        }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={p.url}
+                            alt={p.titulo ?? "Portada"}
+                            loading="lazy"
+                            style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 4, flexShrink: 0 }}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              fontSize: 13, fontWeight: 600, color: C.ink,
+                              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                            }}>
+                              {p.titulo ?? "(sin título)"}
+                            </div>
+                            <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
+                              {formatFechaShort(p.fecha)}
+                            </div>
+                          </div>
+                          {!confirming && (
+                            <ClearBtn onClick={() => setConfirmDeletePortada(p.id)} />
+                          )}
+                        </div>
+                        {confirming && (
+                          <div style={{ borderBottom: `1px solid ${C.line}` }}>
+                            <ConfirmBar
+                              message={`¿Borrar "${p.titulo ?? "esta portada"}"?`}
+                              onCancel={() => setConfirmDeletePortada(null)}
+                              onConfirm={() => handleDeletePortada(p.id, p.storage_path)}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
     </div>
   );
 }

@@ -9,6 +9,7 @@ import ClasificacionScreen from "@/components/ClasificacionScreen";
 import JugadorScreen from "@/components/JugadorScreen";
 import JornadaScreen from "@/components/JornadaScreen";
 import AdminScreen from "@/components/AdminScreen";
+import ActualidadScreen from "@/components/ActualidadScreen";
 import ClipetoToast from "@/components/ClipetoToast";
 import { C } from "@/lib/theme";
 import { FECHA_CIERRE_PREDICCIONES } from "@/lib/config";
@@ -18,13 +19,14 @@ const fechaCierreLabel = new Date(cierreY, cierreM - 1, cierreD)
   .toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
 
 const TABS = [
-  ["clas", "Clasificación"],
+  ["clas", "Clasif."],
   ["dia", "Calendario"],
   ["jug", "Jugador"],
+  ["act", "Actualidad"],
   ["admin", "Admin"],
 ] as const;
 
-type TabId = "clas" | "dia" | "jug" | "admin";
+type TabId = "clas" | "dia" | "jug" | "act" | "admin";
 
 const players = Object.values(
   (predictionsData as { players: Record<string, Player> }).players
@@ -124,6 +126,7 @@ export default function Home() {
           {tab === "dia" && (
             <JornadaScreen players={players} real={real} youtube={youtube} />
           )}
+          {tab === "act" && <ActualidadScreen />}
           {tab === "jug" && (
             <JugadorScreen
               players={players}
@@ -180,7 +183,7 @@ export default function Home() {
                 borderTop: `3px solid ${tab === id ? C.pitch : "transparent"}`,
                 color: tab === id ? C.ink : C.muted,
                 fontWeight: tab === id ? 700 : 500,
-                fontSize: 11.5, letterSpacing: ".02em",
+                fontSize: 11, letterSpacing: ".01em",
                 whiteSpace: "nowrap",
               }}
             >

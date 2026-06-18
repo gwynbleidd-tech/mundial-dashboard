@@ -68,6 +68,47 @@ export async function setExtra(clave: string, valor: string) {
   if (error) throw error;
 }
 
+export interface Portada {
+  id: number;
+  titulo: string | null;
+  fecha: string;
+  storage_path: string;
+  url: string;
+  created_at: string;
+}
+
+export async function fetchPortadas(): Promise<Portada[]> {
+  const { data, error } = await supabase
+    .from("portadas")
+    .select("*")
+    .order("fecha", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Portada[];
+}
+
+export async function uploadPortada(file: File, titulo: string, fecha: string): Promise<Portada> {
+  const ext = file.name.includes(".") ? file.name.split(".").pop()! : "jpg";
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error: upErr } = await supabase.storage
+    .from("portadas")
+    .upload(path, file, { contentType: file.type });
+  if (upErr) throw upErr;
+  const { data: { publicUrl } } = supabase.storage.from("portadas").getPublicUrl(path);
+  const { data, error: insErr } = await supabase
+    .from("portadas")
+    .insert({ titulo: titulo.trim() || null, fecha, storage_path: path, url: publicUrl })
+    .select()
+    .single();
+  if (insErr) throw insErr;
+  return data as Portada;
+}
+
+export async function deletePortada(id: number, storage_path: string): Promise<void> {
+  const { error } = await supabase.from("portadas").delete().eq("id", id);
+  if (error) throw error;
+  await supabase.storage.from("portadas").remove([storage_path]);
+}
+
 /** Vacía un valor extra (honor/posición) poniéndolo a ""; el motor ignora valores vacíos. */
 export async function clearExtra(clave: string) {
   const { error } = await supabase
