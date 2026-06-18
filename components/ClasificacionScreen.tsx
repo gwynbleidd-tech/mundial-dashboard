@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import type { Player, Breakdown, RealResults, RealExtra } from "@/lib/scoring";
 import { buildEvolutionByDay, buildEvolutionByMatch } from "@/lib/evolution";
 import { C } from "@/lib/theme";
+import type { HighlightMode } from "@/lib/highlight";
 
 const EvolucionChart = dynamic(() => import("@/components/EvolucionChart"), { ssr: false });
 
@@ -92,8 +93,18 @@ function ShareButton({ ranked }: { ranked: RankedEntry[] }) {
   );
 }
 
+const HIGHLIGHT_TOGGLES: { id: HighlightMode; label: string; emoji: string; color: string }[] = [
+  { id: "gloria", label: "Camino a la gloria", emoji: "🏆", color: C.gold },
+  { id: "pozo",   label: "Huyendo del pozo",   emoji: "🪣", color: C.rojo },
+];
+
 export default function ClasificacionScreen({ ranked, players, real, extra, loading, onPick }: Props) {
   const [view, setView] = useState<View>("general");
+  const [highlightMode, setHighlightMode] = useState<HighlightMode>("none");
+
+  function toggleHighlight(id: HighlightMode) {
+    setHighlightMode(prev => prev === id ? "none" : id);
+  }
 
   const evoByDay = useMemo(
     () => view === "dia" ? buildEvolutionByDay(players, real, extra) : [],
@@ -234,11 +245,43 @@ export default function ClasificacionScreen({ ranked, players, real, extra, load
 
       {/* Vistas de evolución */}
       {(view === "dia" || view === "partido") && (
-        <EvolucionChart
-          data={view === "dia" ? evoByDay : evoByMatch}
-          players={players}
-          mode={view}
-        />
+        <div>
+          {/* Toggles de highlight */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            {HIGHLIGHT_TOGGLES.map(({ id, label, emoji, color }) => {
+              const active = highlightMode === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => toggleHighlight(id)}
+                  style={{
+                    flex: 1,
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                    padding: "7px 8px",
+                    border: `1.5px solid ${active ? color : C.line}`,
+                    borderRadius: 10,
+                    background: active ? color : "transparent",
+                    color: active ? "#fff" : C.muted,
+                    fontSize: 11.5,
+                    fontWeight: active ? 700 : 400,
+                    cursor: "pointer",
+                    transition: "background .15s, color .15s, border-color .15s",
+                  }}
+                >
+                  <span style={{ fontSize: 14 }}>{emoji}</span>
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          <EvolucionChart
+            data={view === "dia" ? evoByDay : evoByMatch}
+            players={players}
+            mode={view}
+            highlightMode={highlightMode}
+          />
+        </div>
       )}
     </div>
   );
