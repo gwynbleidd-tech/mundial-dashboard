@@ -75,18 +75,25 @@ export interface Portada {
   storage_path: string;
   url: string;
   created_at: string;
+  aspect_ratio: number | null;
 }
 
 export async function fetchPortadas(): Promise<Portada[]> {
   const { data, error } = await supabase
     .from("portadas")
     .select("*")
-    .order("fecha", { ascending: false });
+    .order("fecha", { ascending: false })
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as Portada[];
 }
 
-export async function uploadPortada(file: File, titulo: string, fecha: string): Promise<Portada> {
+export async function uploadPortada(
+  file: File,
+  titulo: string,
+  fecha: string,
+  aspect_ratio: number | null,
+): Promise<Portada> {
   const ext = file.name.includes(".") ? file.name.split(".").pop()! : "jpg";
   const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const { error: upErr } = await supabase.storage
@@ -96,7 +103,7 @@ export async function uploadPortada(file: File, titulo: string, fecha: string): 
   const { data: { publicUrl } } = supabase.storage.from("portadas").getPublicUrl(path);
   const { data, error: insErr } = await supabase
     .from("portadas")
-    .insert({ titulo: titulo.trim() || null, fecha, storage_path: path, url: publicUrl })
+    .insert({ titulo: titulo.trim() || null, fecha, storage_path: path, url: publicUrl, aspect_ratio })
     .select()
     .single();
   if (insErr) throw insErr;

@@ -5,6 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Porra Clipeto",
   description: "Dashboard de predicciones del Mundial 2026",
+  robots: { index: false, follow: false },
   appleWebApp: {
     capable: true,
     title: "Porra Clipeto",

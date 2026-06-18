@@ -507,7 +507,14 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
     setPortUploadStatus("saving");
     setPortUploadError("");
     try {
-      const portada = await uploadPortada(portFile, portTitulo, portFecha);
+      const aspect_ratio = await new Promise<number | null>((resolve) => {
+        const objUrl = URL.createObjectURL(portFile);
+        const img = new Image();
+        img.onload = () => { resolve(img.naturalWidth / img.naturalHeight); URL.revokeObjectURL(objUrl); };
+        img.onerror = () => { URL.revokeObjectURL(objUrl); resolve(null); };
+        img.src = objUrl;
+      });
+      const portada = await uploadPortada(portFile, portTitulo, portFecha, aspect_ratio);
       setPortadasList((prev) => [portada, ...prev]);
       setPortFile(null);
       setPortFileKey((k) => k + 1);
