@@ -51,11 +51,12 @@ export async function setResultado(partido: string, fase: string, local: number 
   if (error) throw error;
 }
 
-/** Guarda/actualiza el youtube_url de un partido. */
+/** Guarda/actualiza el youtube_url de un partido sin tocar el marcador. */
 export async function setYoutubeUrl(partido: string, youtube_url: string | null) {
   const { error } = await supabase
     .from("resultados")
-    .upsert({ partido, youtube_url }, { onConflict: "partido" });
+    .update({ youtube_url })
+    .eq("partido", partido);
   if (error) throw error;
 }
 
