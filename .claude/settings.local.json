@@ -4,7 +4,23 @@
       "Bash(npx tsc *)",
       "Bash(python3 *)",
       "Bash(npm run *)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(npm ls *)",
+      "Bash(npm install *)",
+      "WebSearch",
+      "WebFetch(domain:www.fifa.com)",
+      "WebFetch(domain:www.adidas.com)",
+      "WebFetch(domain:flagcdn.com)",
+      "WebFetch(domain:www.footyheadlines.com)",
+      "WebFetch(domain:blogger.googleusercontent.com)",
+      "Bash(curl -sL \"https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgSY1I7lKUKroymM7ieDkOH-rWcLWpyehKhY9-HKFwpsVqOgP3u6ztsn8FPLlqkvXNObodIIz3XqRAQnOTRZ2syJr0lsPyclqpO9ryWteyWpH8S-OO-gzZ3wvpthOqOrOgCHj35UZQonHKq4UseLXZjKR-IiZ0UqoxF3BGznzXm9HqpykAHzZd4QTQ1WYCe/s1600/adidas-trionda-ball%20%283%29.jpg\" -o public/trionda.jpg)",
+      "Bash(curl -sL \"https://flagcdn.com/40x30/us.png\" -o public/flags/us.png)",
+      "Bash(curl -sL \"https://flagcdn.com/40x30/ca.png\" -o public/flags/ca.png)",
+      "Bash(curl -sL \"https://flagcdn.com/40x30/mx.png\" -o public/flags/mx.png)",
+      "Bash(git commit *)"
     ]
   }
 }
