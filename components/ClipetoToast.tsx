@@ -7,12 +7,18 @@ import { C } from "@/lib/theme";
 const SHOW_PROBABILITY = 0.3;
 
 export default function ClipetoToast() {
-  const [show] = useState(() => Math.random() < SHOW_PROBABILITY);
-  const [frase] = useState(
-    () => CLIPETO_FRASES[Math.floor(Math.random() * CLIPETO_FRASES.length)],
-  );
+  const [show, setShow] = useState(false);
+  const [frase, setFrase] = useState("");
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    // Runs client-only, after hydration — avoids SSR/client mismatch
+    if (Math.random() < SHOW_PROBABILITY) {
+      setFrase(CLIPETO_FRASES[Math.floor(Math.random() * CLIPETO_FRASES.length)]);
+      setShow(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!show) return;
