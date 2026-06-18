@@ -9,6 +9,7 @@ import ClasificacionScreen from "@/components/ClasificacionScreen";
 import JugadorScreen from "@/components/JugadorScreen";
 import JornadaScreen from "@/components/JornadaScreen";
 import AdminScreen from "@/components/AdminScreen";
+import ClipetoToast from "@/components/ClipetoToast";
 import { C } from "@/lib/theme";
 import { FECHA_CIERRE_PREDICCIONES } from "@/lib/config";
 
@@ -157,6 +158,8 @@ export default function Home() {
             />
           )}
         </main>
+
+        <ClipetoToast />
 
         {/* Bottom nav — altura fija para que no varíe al cambiar de tab */}
         <nav style={{
