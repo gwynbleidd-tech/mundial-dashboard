@@ -89,10 +89,22 @@ export default function Home() {
             </div>
           </div>
           <div style={{
-            fontSize: 10, color: C.chalk, opacity: 0.6,
-            marginTop: 8, letterSpacing: ".06em",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            marginTop: 8,
           }}>
-            🔒 Predicciones cerradas · {fechaCierreLabel}
+            <div style={{ fontSize: 10, color: C.chalk, opacity: 0.6, letterSpacing: ".06em" }}>
+              🔒 Predicciones cerradas · {fechaCierreLabel}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/clipeto/clipeto.svg" alt="Clipeto" style={{ height: 22, width: "auto" }} />
+              <span style={{
+                fontSize: 11, fontWeight: 700, color: C.gold,
+                letterSpacing: ".04em", fontFamily: "'Anton', sans-serif",
+              }}>
+                CLIPETOS
+              </span>
+            </div>
           </div>
         </header>
 

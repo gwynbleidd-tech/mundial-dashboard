@@ -3,11 +3,11 @@ import SwRegister from "@/components/SwRegister";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Porra Mundial 2026",
+  title: "Porra Clipeto",
   description: "Dashboard de predicciones del Mundial 2026",
   appleWebApp: {
     capable: true,
-    title: "Porra 2026",
+    title: "Porra Clipeto",
     statusBarStyle: "black-translucent",
   },
 };
@@ -25,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="es" className="h-full">
       <head>
+        <link rel="apple-touch-icon" href="/clipeto/icon-180.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
