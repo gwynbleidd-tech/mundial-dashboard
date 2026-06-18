@@ -513,6 +513,7 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
                   <div style={{
                     display: "flex", alignItems: "center", gap: 8,
                     padding: "8px 2px",
+                    borderBottom: real[m.partido] ? "none" : `1px solid ${C.line}`,
                     fontSize: 13,
                   }}>
                     <span style={{ flex: 1, color: C.ink, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -541,31 +542,33 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
                       onConfirm={() => clearMatch(m.partido, "grupos")}
                     />
                   )}
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: 6,
-                    padding: "0 2px 8px",
-                    borderBottom: `1px solid ${C.line}`,
-                  }}>
-                    <span style={{ fontSize: 10, color: C.muted, flexShrink: 0 }}>YT</span>
-                    <input
-                      type="text"
-                      value={ytRow.url}
-                      onChange={(e) => setYtField(m.partido, e.target.value)}
-                      placeholder="https://youtube.com/…"
-                      style={{
-                        flex: 1, padding: "4px 6px",
-                        border: `1px solid ${ytInvalid ? C.rojo : C.line}`,
-                        borderRadius: 3,
-                        fontFamily: "'DM Mono', monospace", fontSize: 11,
-                        background: C.chalk, color: C.ink,
-                      }}
-                    />
-                    <SaveBtn
-                      status={ytRow.status}
-                      onClick={() => saveYoutube(m.partido)}
-                      disabled={ytInvalid || ytRow.status === "saving"}
-                    />
-                  </div>
+                  {real[m.partido] && (
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 6,
+                      padding: "0 2px 8px",
+                      borderBottom: `1px solid ${C.line}`,
+                    }}>
+                      <span style={{ fontSize: 10, color: C.muted, flexShrink: 0 }}>YT</span>
+                      <input
+                        type="text"
+                        value={ytRow.url}
+                        onChange={(e) => setYtField(m.partido, e.target.value)}
+                        placeholder="https://youtube.com/…"
+                        style={{
+                          flex: 1, padding: "4px 6px",
+                          border: `1px solid ${ytInvalid ? C.rojo : C.line}`,
+                          borderRadius: 3,
+                          fontFamily: "'DM Mono', monospace", fontSize: 11,
+                          background: C.chalk, color: C.ink,
+                        }}
+                      />
+                      <SaveBtn
+                        status={ytRow.status}
+                        onClick={() => saveYoutube(m.partido)}
+                        disabled={ytInvalid || ytRow.status === "saving"}
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -654,6 +657,7 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
                     <div style={{
                       display: "flex", alignItems: "center", gap: 8,
                       padding: "8px 2px",
+                      borderBottom: real[m.partido] ? "none" : `1px solid ${C.line}`,
                       fontSize: 13,
                     }}>
                       {/* Match label + jugadores count */}
@@ -692,31 +696,33 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
                         onConfirm={() => clearMatch(m.partido, koRonda)}
                       />
                     )}
-                    <div style={{
-                      display: "flex", alignItems: "center", gap: 6,
-                      padding: "0 2px 8px",
-                      borderBottom: `1px solid ${C.line}`,
-                    }}>
-                      <span style={{ fontSize: 10, color: C.muted, flexShrink: 0 }}>YT</span>
-                      <input
-                        type="text"
-                        value={ytRow.url}
-                        onChange={(e) => setYtField(m.partido, e.target.value)}
-                        placeholder="https://youtube.com/…"
-                        style={{
-                          flex: 1, padding: "4px 6px",
-                          border: `1px solid ${ytInvalid ? C.rojo : C.line}`,
-                          borderRadius: 3,
-                          fontFamily: "'DM Mono', monospace", fontSize: 11,
-                          background: C.chalk, color: C.ink,
-                        }}
-                      />
-                      <SaveBtn
-                        status={ytRow.status}
-                        onClick={() => saveYoutube(m.partido)}
-                        disabled={ytInvalid || ytRow.status === "saving"}
-                      />
-                    </div>
+                    {real[m.partido] && (
+                      <div style={{
+                        display: "flex", alignItems: "center", gap: 6,
+                        padding: "0 2px 8px",
+                        borderBottom: `1px solid ${C.line}`,
+                      }}>
+                        <span style={{ fontSize: 10, color: C.muted, flexShrink: 0 }}>YT</span>
+                        <input
+                          type="text"
+                          value={ytRow.url}
+                          onChange={(e) => setYtField(m.partido, e.target.value)}
+                          placeholder="https://youtube.com/…"
+                          style={{
+                            flex: 1, padding: "4px 6px",
+                            border: `1px solid ${ytInvalid ? C.rojo : C.line}`,
+                            borderRadius: 3,
+                            fontFamily: "'DM Mono', monospace", fontSize: 11,
+                            background: C.chalk, color: C.ink,
+                          }}
+                        />
+                        <SaveBtn
+                          status={ytRow.status}
+                          onClick={() => saveYoutube(m.partido)}
+                          disabled={ytInvalid || ytRow.status === "saving"}
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })}
