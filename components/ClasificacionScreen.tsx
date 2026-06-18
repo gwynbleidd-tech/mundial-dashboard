@@ -184,18 +184,20 @@ export default function ClasificacionScreen({ ranked, players, real, extra, load
                   )}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 16, color: C.ink }}>
-                    {r.player.nombre}
-                  </div>
-                  {showLantern && i === lastIdx && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/clipeto/clipeto.svg" alt="" style={{ height: 14, width: "auto" }} />
-                      <span style={{ fontSize: 10, color: C.rojo, letterSpacing: ".02em" }}>
-                        Este usa Clipeto 📎
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontWeight: 700, fontSize: 16, color: C.ink }}>
+                      {r.player.nombre}
+                    </span>
+                    {showLantern && i === lastIdx && (
+                      <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/clipeto/clipeto.svg" alt="" style={{ height: 14, width: "auto" }} />
+                        <span style={{ fontSize: 10, color: C.rojo, letterSpacing: ".02em" }}>
+                          This guy uses Clipeto
+                        </span>
                       </span>
-                    </div>
-                  )}
+                    )}
+                  </div>
                   <div style={{ height: 6, background: C.chalk, borderRadius: 3, marginTop: 6, overflow: "hidden" }}>
                     <div style={{
                       height: "100%",
