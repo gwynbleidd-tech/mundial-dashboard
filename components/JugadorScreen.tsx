@@ -267,7 +267,7 @@ export default function JugadorScreen({ players, picked, onPick, real, extra }: 
       {/* Cabecera */}
       <h2 style={hStyle}>{player.nombre}</h2>
       <p style={{ color: C.muted, fontSize: 12.5, margin: "5px 0 0", letterSpacing: ".02em" }}>
-        {score.total} pts · {score.exactos} exactos · {score.signos} signos
+        {score.total} puntos · {score.signos + score.exactos} 1X2 · {score.exactos} exactos
       </p>
 
       {/* ── CUADRO DE HONOR ── */}

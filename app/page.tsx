@@ -125,6 +125,7 @@ export default function Home() {
               players={players}
               real={real}
               extra={extra}
+              youtube={youtube}
               onResultSaved={(partido, local, visitante) =>
                 setReal((prev) => ({ ...prev, [partido]: { local, visitante } }))
               }
@@ -133,6 +134,13 @@ export default function Home() {
               }
               onExtraSaved={(clave, valor) =>
                 setExtra((prev) => ({ ...prev, [clave]: valor }))
+              }
+              onYoutubeSaved={(partido, url) =>
+                setYoutube((prev) => {
+                  const n = { ...prev };
+                  if (url) n[partido] = url; else delete n[partido];
+                  return n;
+                })
               }
             />
           )}

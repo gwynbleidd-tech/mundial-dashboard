@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import type { Player, RealResults, RealExtra } from "@/lib/scoring";
 import { normPos } from "@/lib/scoring";
-import { setResultado, setExtra as supaSetExtra, clearExtra as supaClearExtra } from "@/lib/supabase";
+import { setResultado, setExtra as supaSetExtra, clearExtra as supaClearExtra, setYoutubeUrl, type YoutubeUrls } from "@/lib/supabase";
 import teamsData from "@/data/teams.json";
 import crusesData from "@/data/cruces_eliminatoria.json";
 import { C } from "@/lib/theme";
@@ -206,19 +206,22 @@ function ConfirmBar({ message, onCancel, onConfirm }: {
 
 // ---- AdminContent ----
 
-function AdminContent({ players, real, extra, onResultSaved, onResultCleared, onExtraSaved }: {
+function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCleared, onExtraSaved, onYoutubeSaved }: {
   players: Player[];
   real: RealResults;
   extra: RealExtra;
+  youtube: YoutubeUrls;
   onResultSaved: (partido: string, local: number, visitante: number) => void;
   onResultCleared: (partido: string) => void;
   onExtraSaved: (clave: string, valor: string | string[]) => void;
+  onYoutubeSaved: (partido: string, url: string | null) => void;
 }) {
   const [adminTab, setAdminTab] = useState<typeof ADMIN_TABS[number]["id"]>("partidos");
   const [confirmClear, setConfirmClear] = useState<string | null>(null);
 
   // ── Partidos / Eliminatorias shared edits state ──
   const [edits, setEdits] = useState<Record<string, { local: string; visitante: string; status: RowStatus }>>({});
+  const [ytEdits, setYtEdits] = useState<Record<string, { url: string; status: RowStatus }>>({});
 
   // ── Eliminatorias state ──
   const [koRonda, setKoRonda] = useState("dieciseisavos");
@@ -325,6 +328,35 @@ function AdminContent({ players, real, extra, onResultSaved, onResultCleared, on
       onResultCleared(partido);
     } catch {
       setConfirmClear("match_" + partido);
+    }
+  }
+
+  // ── YouTube helpers ──
+  function getYtRow(partido: string) {
+    if (ytEdits[partido]) return ytEdits[partido];
+    return { url: youtube[partido] ?? "", status: "idle" as RowStatus };
+  }
+
+  function setYtField(partido: string, val: string) {
+    setYtEdits((prev) => ({ ...prev, [partido]: { url: val, status: "idle" } }));
+  }
+
+  async function saveYoutube(partido: string) {
+    const row = getYtRow(partido);
+    const url = row.url.trim();
+    if (url && !url.startsWith("http")) return;
+    setYtEdits((prev) => ({ ...prev, [partido]: { url, status: "saving" } }));
+    try {
+      await setYoutubeUrl(partido, url || null);
+      setYtEdits((prev) => ({ ...prev, [partido]: { url, status: "saved" } }));
+      onYoutubeSaved(partido, url || null);
+      setTimeout(() => setYtEdits((prev) => {
+        const c = prev[partido];
+        if (c?.status === "saved") return { ...prev, [partido]: { ...c, status: "idle" } };
+        return prev;
+      }), 2000);
+    } catch {
+      setYtEdits((prev) => ({ ...prev, [partido]: { url, status: "error" } }));
     }
   }
 
@@ -474,12 +506,13 @@ function AdminContent({ players, real, extra, onResultSaved, onResultCleared, on
               const row = getRow(m.partido);
               const canSave = row.local !== "" && row.visitante !== "" && row.status !== "saving";
               const confirming = confirmClear === "match_" + m.partido;
+              const ytRow = getYtRow(m.partido);
+              const ytInvalid = !!ytRow.url && !ytRow.url.startsWith("http");
               return (
                 <div key={i}>
                   <div style={{
                     display: "flex", alignItems: "center", gap: 8,
                     padding: "8px 2px",
-                    borderBottom: confirming ? "none" : `1px solid ${C.line}`,
                     fontSize: 13,
                   }}>
                     <span style={{ flex: 1, color: C.ink, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -502,14 +535,37 @@ function AdminContent({ players, real, extra, onResultSaved, onResultCleared, on
                     )}
                   </div>
                   {confirming && (
-                    <div style={{ borderBottom: `1px solid ${C.line}` }}>
-                      <ConfirmBar
-                        message={`¿Limpiar resultado de ${m.local} – ${m.visitante}?`}
-                        onCancel={() => setConfirmClear(null)}
-                        onConfirm={() => clearMatch(m.partido, "grupos")}
-                      />
-                    </div>
+                    <ConfirmBar
+                      message={`¿Limpiar resultado de ${m.local} – ${m.visitante}?`}
+                      onCancel={() => setConfirmClear(null)}
+                      onConfirm={() => clearMatch(m.partido, "grupos")}
+                    />
                   )}
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    padding: "0 2px 8px",
+                    borderBottom: `1px solid ${C.line}`,
+                  }}>
+                    <span style={{ fontSize: 10, color: C.muted, flexShrink: 0 }}>YT</span>
+                    <input
+                      type="text"
+                      value={ytRow.url}
+                      onChange={(e) => setYtField(m.partido, e.target.value)}
+                      placeholder="https://youtube.com/…"
+                      style={{
+                        flex: 1, padding: "4px 6px",
+                        border: `1px solid ${ytInvalid ? C.rojo : C.line}`,
+                        borderRadius: 3,
+                        fontFamily: "'DM Mono', monospace", fontSize: 11,
+                        background: C.chalk, color: C.ink,
+                      }}
+                    />
+                    <SaveBtn
+                      status={ytRow.status}
+                      onClick={() => saveYoutube(m.partido)}
+                      disabled={ytInvalid || ytRow.status === "saving"}
+                    />
+                  </div>
                 </div>
               );
             })}
@@ -591,12 +647,13 @@ function AdminContent({ players, real, extra, onResultSaved, onResultCleared, on
                 const row = getRow(m.partido);
                 const canSave = row.local !== "" && row.visitante !== "" && row.status !== "saving";
                 const confirming = confirmClear === "match_" + m.partido;
+                const ytRow = getYtRow(m.partido);
+                const ytInvalid = !!ytRow.url && !ytRow.url.startsWith("http");
                 return (
                   <div key={m.partido}>
                     <div style={{
                       display: "flex", alignItems: "center", gap: 8,
                       padding: "8px 2px",
-                      borderBottom: confirming ? "none" : `1px solid ${C.line}`,
                       fontSize: 13,
                     }}>
                       {/* Match label + jugadores count */}
@@ -629,14 +686,37 @@ function AdminContent({ players, real, extra, onResultSaved, onResultCleared, on
                       )}
                     </div>
                     {confirming && (
-                      <div style={{ borderBottom: `1px solid ${C.line}` }}>
-                        <ConfirmBar
-                          message={`¿Limpiar resultado de ${m.local} – ${m.visitante}?`}
-                          onCancel={() => setConfirmClear(null)}
-                          onConfirm={() => clearMatch(m.partido, koRonda)}
-                        />
-                      </div>
+                      <ConfirmBar
+                        message={`¿Limpiar resultado de ${m.local} – ${m.visitante}?`}
+                        onCancel={() => setConfirmClear(null)}
+                        onConfirm={() => clearMatch(m.partido, koRonda)}
+                      />
                     )}
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 6,
+                      padding: "0 2px 8px",
+                      borderBottom: `1px solid ${C.line}`,
+                    }}>
+                      <span style={{ fontSize: 10, color: C.muted, flexShrink: 0 }}>YT</span>
+                      <input
+                        type="text"
+                        value={ytRow.url}
+                        onChange={(e) => setYtField(m.partido, e.target.value)}
+                        placeholder="https://youtube.com/…"
+                        style={{
+                          flex: 1, padding: "4px 6px",
+                          border: `1px solid ${ytInvalid ? C.rojo : C.line}`,
+                          borderRadius: 3,
+                          fontFamily: "'DM Mono', monospace", fontSize: 11,
+                          background: C.chalk, color: C.ink,
+                        }}
+                      />
+                      <SaveBtn
+                        status={ytRow.status}
+                        onClick={() => saveYoutube(m.partido)}
+                        disabled={ytInvalid || ytRow.status === "saving"}
+                      />
+                    </div>
                   </div>
                 );
               })}
@@ -871,12 +951,14 @@ interface Props {
   players: Player[];
   real: RealResults;
   extra: RealExtra;
+  youtube: YoutubeUrls;
   onResultSaved: (partido: string, local: number, visitante: number) => void;
   onResultCleared: (partido: string) => void;
   onExtraSaved: (clave: string, valor: string | string[]) => void;
+  onYoutubeSaved: (partido: string, url: string | null) => void;
 }
 
-export default function AdminScreen({ players, real, extra, onResultSaved, onResultCleared, onExtraSaved }: Props) {
+export default function AdminScreen({ players, real, extra, youtube, onResultSaved, onResultCleared, onExtraSaved, onYoutubeSaved }: Props) {
   const [unlocked, setUnlocked] = useState(false);
 
   if (!unlocked) return <LockScreen onUnlock={() => setUnlocked(true)} />;
@@ -886,9 +968,11 @@ export default function AdminScreen({ players, real, extra, onResultSaved, onRes
       players={players}
       real={real}
       extra={extra}
+      youtube={youtube}
       onResultSaved={onResultSaved}
       onResultCleared={onResultCleared}
       onExtraSaved={onExtraSaved}
+      onYoutubeSaved={onYoutubeSaved}
     />
   );
 }
