@@ -190,6 +190,8 @@ function ClearBtn({ onClick }: { onClick: () => void }) {
   );
 }
 
+// ---- AdminContent ----
+
 function ConfirmBar({ message, onCancel, onConfirm }: {
   message: string; onCancel: () => void; onConfirm: () => void;
 }) {
@@ -218,8 +220,6 @@ function ConfirmBar({ message, onCancel, onConfirm }: {
   );
 }
 
-// ---- AdminContent ----
-
 function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCleared, onExtraSaved, onYoutubeSaved }: {
   players: Player[];
   real: RealResults;
@@ -247,11 +247,13 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
   const [honorStatus, setHonorStatus] = useState<Record<string, RowStatus>>({});
 
   // ── Posiciones state ──
-  const [posVals, setPosVals] = useState<Record<string, Record<number, string>>>({});
+  const [ordenGrupos, setOrdenGrupos] = useState<Record<string, string[]>>({});
+  const [ordenTerceros, setOrdenTerceros] = useState<string[]>([]);
   const [posStatus, setPosStatus] = useState<Record<string, RowStatus>>({});
-  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+  const [draggedGroup, setDraggedGroup] = useState<string | null>(null);
 
-  // ── Clasificados state ──
+  // ── Clasificados state (Original) ──
   const [clasifSels, setClasifSels] = useState<Record<string, Set<string>>>({});
   const [clasifStatus, setClasifStatus] = useState<Record<string, RowStatus>>({});
   const [clasifRonda, setClasifRonda] = useState("dieciseisavos");
@@ -272,7 +274,7 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
     setConfirmClear(null);
   }
 
-  // Populate honor/posiciones/clasificados from extra prop
+  // Populate honor y clasificados desde extra
   useEffect(() => {
     const hv: Record<string, string> = {};
     for (const f of HONOR_FIELDS) {
@@ -280,17 +282,6 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
       hv[f.key] = typeof v === "string" ? v : "";
     }
     setHonorVals(hv);
-
-    const pv: Record<string, Record<number, string>> = {};
-    for (const g of GRUPOS) {
-      pv[g] = {};
-      for (let rank = 1; rank <= 4; rank++) {
-        const key = normPos(`${rank}º GRUPO ${g}`);
-        const v = extra[key];
-        pv[g][rank] = typeof v === "string" ? v : "";
-      }
-    }
-    setPosVals(pv);
 
     const cs: Record<string, Set<string>> = {};
     for (const r of CLASIF_RONDAS) {
@@ -413,26 +404,180 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
     }
   }
 
-  // ── Posiciones helpers ──
-  function toggleGroup(g: string) {
-    setOpenGroups((prev) => {
-      const next = new Set(prev);
-      next.has(g) ? next.delete(g) : next.add(g);
-      return next;
+  // ── DESEMPATE MATEMÁTICO GRUPOS ──
+  const calcularClasificacionGrupo = (grupoChar: string) => {
+    const equiposGrupo = GRUPOS_EQUIPOS[grupoChar] ?? [];
+    const stats: Record<string, { equipo: string; pts: number; dg: number; gf: number }> = {};
+    equiposGrupo.forEach(t => {
+      stats[t] = { equipo: t, pts: 0, dg: 0, gf: 0 };
     });
-    setConfirmClear(null);
-  }
 
-  async function saveGrupo(g: string) {
+    const partidosGrupo = (players[0]?.fase_grupos ?? []).filter(m => {
+      return equiposGrupo.includes(m.local) && equiposGrupo.includes(m.visitante);
+    });
+
+    partidosGrupo.forEach(m => {
+      const res = real[m.partido];
+      if (!res || res.local === null || res.visitante === null) return;
+      const gl = res.local;
+      const gv = res.visitante;
+
+      stats[m.local].gf += gl;
+      stats[m.local].dg += (gl - gv);
+      stats[m.visitante].gf += gv;
+      stats[m.visitante].dg += (gv - gl);
+
+      if (gl > gv) stats[m.local].pts += 3;
+      else if (gl < gv) stats[m.visitante].pts += 3;
+      else {
+        stats[m.local].pts += 1;
+        stats[m.visitante].pts += 1;
+      }
+    });
+
+    const listaEquipos = Object.values(stats);
+
+    listaEquipos.sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts;
+
+      const empatados = listaEquipos.filter(e => e.pts === a.pts).map(e => e.equipo);
+      if (empatados.length > 1) {
+        let ptsA = 0, ptsB = 0, gfA = 0, gfB = 0, gcA = 0, gcB = 0;
+        
+        partidosGrupo.forEach(m => {
+          const res = real[m.partido];
+          if (!res || res.local === null || res.visitante === null) return;
+          if (empatados.includes(m.local) && empatados.includes(m.visitante)) {
+            if (m.local === a.equipo) { 
+              ptsA += res.local > res.visitante ? 3 : res.local === res.visitante ? 1 : 0; 
+              gfA += res.local; gcA += res.visitante; 
+            }
+            if (m.visitante === a.equipo) { 
+              ptsA += res.visitante > res.local ? 3 : res.local === res.visitante ? 1 : 0; 
+              gfA += res.visitante; gcA += res.local; 
+            }
+            if (m.local === b.equipo) { 
+              ptsB += res.local > res.visitante ? 3 : res.local === res.visitante ? 1 : 0; 
+              gfB += res.local; gcB += res.visitante; 
+            }
+            if (m.visitante === b.equipo) { 
+              ptsB += res.visitante > res.local ? 3 : res.local === res.visitante ? 1 : 0; 
+              gfB += res.visitante; gcB += res.local; 
+            }
+          }
+        });
+
+        if (ptsB !== ptsA) return ptsB - ptsA;
+        const dgA = gfA - gcA; const dgB = gfB - gcB;
+        if (dgB !== dgA) return dgB - dgA;
+        if (gfB !== gfA) return gfB - gfA;
+      }
+
+      if (b.dg !== a.dg) return b.dg - a.dg;
+      return b.gf - a.gf;
+    });
+
+    return listaEquipos;
+  };
+
+  // Inicializar o recalcular las posiciones al entrar a la pestaña
+  useEffect(() => {
+    if (adminTab === "posiciones") {
+      const init: Record<string, string[]> = {};
+      GRUPOS.forEach(g => {
+        const guardadas: string[] = [];
+        for (let r = 1; r <= 4; r++) {
+          const v = extra[normPos(`${r}º GRUPO ${g}`)];
+          if (typeof v === "string" && v) guardadas.push(v);
+        }
+        if (guardadas.length === 4) {
+          init[g] = guardadas;
+        } else {
+          init[g] = calcularClasificacionGrupo(g).map(e => e.equipo);
+        }
+      });
+      setOrdenGrupos(init);
+
+      // Cargar orden personalizado de mejores terceros si existe
+      const guardadosTerceros: string[] = [];
+      for (let r = 1; r <= 12; r++) {
+        const v = extra[normPos(`${r}º TERCEROS`)];
+        if (typeof v === "string" && v) guardadosTerceros.push(v);
+      }
+      if (guardadosTerceros.length === 12) {
+        setOrdenTerceros(guardadosTerceros);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminTab, real, extra, players]);
+
+  // Base calculada matemáticamente de terceros
+  const listaTercerosCalculados = useMemo(() => {
+    const terceros: Array<{ equipo: string; grupo: string; pts: number; dg: number; gf: number }> = [];
+    Object.entries(ordenGrupos).forEach(([g, equipos]) => {
+      const tercerEquipo = equipos[2]; 
+      if (!tercerEquipo) return;
+      const orig = calcularClasificacionGrupo(g).find(e => e.equipo === tercerEquipo);
+      if (orig) {
+        terceros.push({ equipo: tercerEquipo, grupo: g, pts: orig.pts, dg: orig.dg, gf: orig.gf });
+      }
+    });
+    return terceros.sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts;
+      if (b.dg !== a.dg) return b.dg - a.dg;
+      return b.gf - a.gf;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ordenGrupos]);
+
+  // Si no hay un orden manual guardado previamente, sigue el cálculo matemático base
+  useEffect(() => {
+    const guardadosTerceros: string[] = [];
+    for (let r = 1; r <= 12; r++) {
+      const v = extra[normPos(`${r}º TERCEROS`)];
+      if (typeof v === "string" && v) guardadosTerceros.push(v);
+    }
+    if (guardadosTerceros.length !== 12) {
+      setOrdenTerceros(listaTercerosCalculados.map(t => t.equipo));
+    }
+  }, [listaTercerosCalculados, extra]);
+
+  // Handlers para Drag & Drop NATIVO
+  const handleDragStart = (idx: number, grupo: string | null) => {
+    setDraggedIdx(idx);
+    setDraggedGroup(grupo);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
+
+  const handleDropGrupo = (targetIdx: number, grupo: string) => {
+    if (draggedIdx === null || draggedGroup !== grupo) return;
+    const nuevaLista = [...ordenGrupos[grupo]];
+    const [removido] = nuevaLista.splice(draggedIdx, 1);
+    nuevaLista.splice(targetIdx, 0, removido);
+    setOrdenGrupos(prev => ({ ...prev, [grupo]: nuevaLista }));
+    setDraggedIdx(null);
+    setDraggedGroup(null);
+  };
+
+  const handleDropTerceros = (targetIdx: number) => {
+    if (draggedIdx === null || draggedGroup !== "terceros") return;
+    const nuevaLista = [...ordenTerceros];
+    const [removido] = nuevaLista.splice(draggedIdx, 1);
+    nuevaLista.splice(targetIdx, 0, removido);
+    setOrdenTerceros(nuevaLista);
+    setDraggedIdx(null);
+    setDraggedGroup(null);
+  };
+
+  async function savePosicionesGrupo(g: string) {
     setPosStatus((prev) => ({ ...prev, [g]: "saving" }));
     try {
-      for (let rank = 1; rank <= 4; rank++) {
-        const key = normPos(`${rank}º GRUPO ${g}`);
-        const val = posVals[g]?.[rank] ?? "";
-        if (val) {
-          await supaSetExtra(key, val);
-          onExtraSaved(key, val);
-        }
+      const equipos = ordenGrupos[g] ?? [];
+      for (let i = 0; i < equipos.length; i++) {
+        const key = normPos(`${i + 1}º GRUPO ${g}`);
+        await supaSetExtra(key, equipos[i]);
+        onExtraSaved(key, equipos[i]);
       }
       setPosStatus((prev) => ({ ...prev, [g]: "saved" }));
       setTimeout(() => setPosStatus((prev) => {
@@ -444,21 +589,56 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
     }
   }
 
-  async function clearGrupo(g: string) {
+  async function clearPosicionesGrupo(g: string) {
     setConfirmClear(null);
     try {
-      for (let rank = 1; rank <= 4; rank++) {
-        const key = normPos(`${rank}º GRUPO ${g}`);
+      for (let i = 1; i <= 4; i++) {
+        const key = normPos(`${i}º GRUPO ${g}`);
         await supaClearExtra(key);
         onExtraSaved(key, "");
       }
-      setPosVals((prev) => ({ ...prev, [g]: { 1: "", 2: "", 3: "", 4: "" } }));
+      setOrdenGrupos(prev => ({
+        ...prev,
+        [g]: calcularClasificacionGrupo(g).map(e => e.equipo)
+      }));
     } catch {
       setConfirmClear("grupo_" + g);
     }
   }
 
-  // ── Clasificados helpers ──
+  async function savePosicionesTerceros() {
+    setPosStatus((prev) => ({ ...prev, terceros: "saving" }));
+    try {
+      for (let i = 0; i < ordenTerceros.length; i++) {
+        const key = normPos(`${i + 1}º TERCEROS`);
+        await supaSetExtra(key, ordenTerceros[i]);
+        onExtraSaved(key, ordenTerceros[i]);
+      }
+      setPosStatus((prev) => ({ ...prev, terceros: "saved" }));
+      setTimeout(() => setPosStatus((prev) => {
+        if (prev.terceros === "saved") return { ...prev, terceros: "idle" };
+        return prev;
+      }), 2000);
+    } catch {
+      setPosStatus((prev) => ({ ...prev, terceros: "error" }));
+    }
+  }
+
+  async function clearPosicionesTerceros() {
+    setConfirmClear(null);
+    try {
+      for (let i = 1; i <= 12; i++) {
+        const key = normPos(`${i}º TERCEROS`);
+        await supaClearExtra(key);
+        onExtraSaved(key, "");
+      }
+      setOrdenTerceros(listaTercerosCalculados.map(t => t.equipo));
+    } catch {
+      setConfirmClear("terceros");
+    }
+  }
+
+  // ── Clasificados helpers (Original) ──
   function toggleTeam(ronda: string, equipo: string) {
     setClasifSels((prev) => {
       const sel = new Set(prev[ronda] ?? []);
@@ -469,7 +649,8 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
 
   async function saveClasif(ronda: string) {
     const arr = [...(clasifSels[ronda] ?? new Set())];
-    setClasifStatus((prev) => ({ ...prev, [ronda]: "saving" }));
+    clasifStatus[ronda] = "saving";
+    setClasifStatus({ ...clasifStatus });
     try {
       await supaSetExtra("clasif_" + ronda, JSON.stringify(arr));
       onExtraSaved("clasif_" + ronda, arr);
@@ -534,17 +715,15 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
       await deletePortada(id, storage_path);
       setPortadasList((prev) => prev.filter((p) => p.id !== id));
     } catch {
-      // ignore — UI keeps the item; user can retry
+      // ignore
     }
   }
-
-  // ── Render ──
 
   return (
     <div>
       <h2 style={hStyle}>Admin</h2>
 
-      {/* Tab navigation */}
+      {/* Navegación de Pestañas */}
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 16, marginBottom: 20 }}>
         {ADMIN_TABS.map(({ id, label }) => {
           const active = adminTab === id;
@@ -566,7 +745,7 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
         })}
       </div>
 
-      {/* ── PARTIDOS (grupos) ── */}
+      {/* ── PARTIDOS ── */}
       {adminTab === "partidos" && (
         <div>
           <p style={subStyle}>Marcadores finales de fase de grupos.</p>
@@ -595,14 +774,8 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
                     <input inputMode="numeric" value={row.visitante}
                       onChange={(e) => setField(m.partido, "visitante", e.target.value)}
                       style={inpStyle} aria-label={`${m.visitante} goles`} />
-                    <SaveBtn
-                      status={row.status}
-                      onClick={() => saveMatch(m.partido, "grupos")}
-                      disabled={!canSave}
-                    />
-                    {real[m.partido] && !confirming && (
-                      <ClearBtn onClick={() => setConfirmClear("match_" + m.partido)} />
-                    )}
+                    <SaveBtn status={row.status} onClick={() => saveMatch(m.partido, "grupos")} disabled={!canSave} />
+                    {real[m.partido] && !confirming && <ClearBtn onClick={() => setConfirmClear("match_" + m.partido)} />}
                   </div>
                   {confirming && (
                     <ConfirmBar
@@ -612,11 +785,7 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
                     />
                   )}
                   {real[m.partido] && (
-                    <div style={{
-                      display: "flex", alignItems: "center", gap: 6,
-                      padding: "0 2px 8px",
-                      borderBottom: `1px solid ${C.line}`,
-                    }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 2px 8px", borderBottom: `1px solid ${C.line}` }}>
                       <span style={{ fontSize: 10, color: C.muted, flexShrink: 0 }}>YT</span>
                       <input
                         type="text"
@@ -624,18 +793,11 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
                         onChange={(e) => setYtField(m.partido, e.target.value)}
                         placeholder="https://youtube.com/…"
                         style={{
-                          flex: 1, padding: "4px 6px",
-                          border: `1px solid ${ytInvalid ? C.rojo : C.line}`,
-                          borderRadius: 3,
-                          fontFamily: "'DM Mono', monospace", fontSize: 11,
-                          background: C.chalk, color: C.ink,
+                          flex: 1, padding: "4px 6px", border: `1px solid ${ytInvalid ? C.rojo : C.line}`,
+                          borderRadius: 3, fontFamily: "'DM Mono', monospace", fontSize: 11, background: C.chalk, color: C.ink,
                         }}
                       />
-                      <SaveBtn
-                        status={ytRow.status}
-                        onClick={() => saveYoutube(m.partido)}
-                        disabled={ytInvalid || ytRow.status === "saving"}
-                      />
+                      <SaveBtn status={ytRow.status} onClick={() => saveYoutube(m.partido)} disabled={ytInvalid || ytRow.status === "saving"} />
                     </div>
                   )}
                 </div>
@@ -658,7 +820,6 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
 
         return (
           <div>
-            {/* Ronda selector */}
             <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 12 }}>
               {KO_RONDAS.map(({ key, label }) => {
                 const active = koRonda === key;
@@ -667,11 +828,8 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
                     key={key}
                     onClick={() => { setKoRonda(key); setKoFilter(""); setConfirmClear(null); }}
                     style={{
-                      padding: "5px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700,
-                      cursor: "pointer",
-                      border: `1px solid ${active ? C.ink : C.line}`,
-                      background: active ? C.ink : "transparent",
-                      color: active ? C.chalk : C.muted,
+                      padding: "5px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                      border: `1px solid ${active ? C.ink : C.line}`, background: active ? C.ink : "transparent", color: active ? C.chalk : C.muted,
                     }}
                   >
                     {label}
@@ -680,41 +838,24 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
               })}
             </div>
 
-            {/* Filter row */}
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14 }}>
               <input
                 type="search"
                 value={koFilter}
                 onChange={(e) => { setKoFilter(e.target.value); setConfirmClear(null); }}
                 placeholder="Filtrar por equipo…"
-                style={{
-                  flex: 1, padding: "6px 10px", border: `1px solid ${C.line}`,
-                  borderRadius: 3, fontSize: 13, background: C.chalk, color: C.ink,
-                }}
+                style={{ flex: 1, padding: "6px 10px", border: `1px solid ${C.line}`, borderRadius: 3, fontSize: 13, background: C.chalk, color: C.ink }}
               />
               <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: C.muted, cursor: "pointer", whiteSpace: "nowrap" }}>
-                <input
-                  type="checkbox"
-                  checked={koHideSaved}
-                  onChange={(e) => setKoHideSaved(e.target.checked)}
-                  style={{ cursor: "pointer" }}
-                />
+                <input type="checkbox" checked={koHideSaved} onChange={(e) => setKoHideSaved(e.target.checked)} style={{ cursor: "pointer" }} />
                 Solo pendientes
               </label>
             </div>
 
-            {/* Count summary */}
-            <p style={{ ...subStyle, marginBottom: 10 }}>
-              {savedCount}/{cruces.length} con resultado · {filtered.length} visibles
-            </p>
+            <p style={{ ...subStyle, marginBottom: 10 }}>{savedCount}/{cruces.length} con resultado · {filtered.length} visibles</p>
 
-            {/* Match list */}
             <div>
-              {filtered.length === 0 && (
-                <p style={{ color: C.muted, fontSize: 13, textAlign: "center", paddingTop: 16 }}>
-                  Sin partidos
-                </p>
-              )}
+              {filtered.length === 0 && <p style={{ color: C.muted, fontSize: 13, textAlign: "center", paddingTop: 16 }}>Sin partidos</p>}
               {filtered.map((m) => {
                 const row = getRow(m.partido);
                 const canSave = row.local !== "" && row.visitante !== "" && row.status !== "saving";
@@ -724,39 +865,18 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
                 return (
                   <div key={m.partido}>
                     <div style={{
-                      display: "flex", alignItems: "center", gap: 8,
-                      padding: "8px 2px",
-                      borderBottom: real[m.partido] ? "none" : `1px solid ${C.line}`,
-                      fontSize: 13,
+                      display: "flex", alignItems: "center", gap: 8, padding: "8px 2px",
+                      borderBottom: real[m.partido] ? "none" : `1px solid ${C.line}`, fontSize: 13,
                     }}>
-                      {/* Match label + jugadores count */}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                          color: C.ink, overflow: "hidden",
-                          textOverflow: "ellipsis", whiteSpace: "nowrap",
-                        }}>
-                          {m.local} – {m.visitante}
-                        </div>
-                        <div style={{ fontSize: 10, color: C.muted, marginTop: 1 }}>
-                          {m.jugadores.length} {m.jugadores.length === 1 ? "jugador" : "jugadores"}
-                        </div>
+                        <div style={{ color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.local} – {m.visitante}</div>
+                        <div style={{ fontSize: 10, color: C.muted, marginTop: 1 }}>{m.jugadores.length} {m.jugadores.length === 1 ? "jugador" : "jugadores"}</div>
                       </div>
-
-                      <input inputMode="numeric" value={row.local}
-                        onChange={(e) => setField(m.partido, "local", e.target.value)}
-                        style={inpStyle} aria-label={`${m.local} goles`} />
+                      <input inputMode="numeric" value={row.local} onChange={(e) => setField(m.partido, "local", e.target.value)} style={inpStyle} aria-label={`${m.local} goles`} />
                       <span style={{ color: C.muted }}>:</span>
-                      <input inputMode="numeric" value={row.visitante}
-                        onChange={(e) => setField(m.partido, "visitante", e.target.value)}
-                        style={inpStyle} aria-label={`${m.visitante} goles`} />
-                      <SaveBtn
-                        status={row.status}
-                        onClick={() => saveMatch(m.partido, koRonda)}
-                        disabled={!canSave}
-                      />
-                      {real[m.partido] && !confirming && (
-                        <ClearBtn onClick={() => setConfirmClear("match_" + m.partido)} />
-                      )}
+                      <input inputMode="numeric" value={row.visitante} onChange={(e) => setField(m.partido, "visitante", e.target.value)} style={inpStyle} aria-label={`${m.visitante} goles`} />
+                      <SaveBtn status={row.status} onClick={() => saveMatch(m.partido, koRonda)} disabled={!canSave} />
+                      {real[m.partido] && !confirming && <ClearBtn onClick={() => setConfirmClear("match_" + m.partido)} />}
                     </div>
                     {confirming && (
                       <ConfirmBar
@@ -766,11 +886,7 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
                       />
                     )}
                     {real[m.partido] && (
-                      <div style={{
-                        display: "flex", alignItems: "center", gap: 6,
-                        padding: "0 2px 8px",
-                        borderBottom: `1px solid ${C.line}`,
-                      }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 2px 8px", borderBottom: `1px solid ${C.line}` }}>
                         <span style={{ fontSize: 10, color: C.muted, flexShrink: 0 }}>YT</span>
                         <input
                           type="text"
@@ -778,18 +894,11 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
                           onChange={(e) => setYtField(m.partido, e.target.value)}
                           placeholder="https://youtube.com/…"
                           style={{
-                            flex: 1, padding: "4px 6px",
-                            border: `1px solid ${ytInvalid ? C.rojo : C.line}`,
-                            borderRadius: 3,
-                            fontFamily: "'DM Mono', monospace", fontSize: 11,
-                            background: C.chalk, color: C.ink,
+                            flex: 1, padding: "4px 6px", border: `1px solid ${ytInvalid ? C.rojo : C.line}`,
+                            borderRadius: 3, fontFamily: "'DM Mono', monospace", fontSize: 11, background: C.chalk, color: C.ink,
                           }}
                         />
-                        <SaveBtn
-                          status={ytRow.status}
-                          onClick={() => saveYoutube(m.partido)}
-                          disabled={ytInvalid || ytRow.status === "saving"}
-                        />
+                        <SaveBtn status={ytRow.status} onClick={() => saveYoutube(m.partido)} disabled={ytInvalid || ytRow.status === "saving"} />
                       </div>
                     )}
                   </div>
@@ -812,37 +921,22 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
             const confirming = confirmClear === key;
             return (
               <div key={key}>
-                <div style={{
-                  display: "flex", alignItems: "center", gap: 8,
-                  padding: "10px 0",
-                  borderBottom: confirming ? "none" : `1px solid ${C.line}`,
-                }}>
-                  <span style={{ width: 110, flexShrink: 0, fontSize: 12, color: C.muted, fontWeight: 700 }}>
-                    {label}
-                  </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0", borderBottom: confirming ? "none" : `1px solid ${C.line}` }}>
+                  <span style={{ width: 110, flexShrink: 0, fontSize: 12, color: C.muted, fontWeight: 700 }}>{label}</span>
                   {type === "team" ? (
-                    <select value={val}
-                      onChange={(e) => setHonorVals((prev) => ({ ...prev, [key]: e.target.value }))}
-                      style={selStyle}>
+                    <select value={val} onChange={(e) => setHonorVals((prev) => ({ ...prev, [key]: e.target.value }))} style={selStyle}>
                       <option value="">—</option>
                       {ALL_TEAMS.map((t) => <option key={t} value={t}>{t}</option>)}
                     </select>
                   ) : (
-                    <input type="text" list="player-datalist" value={val}
-                      onChange={(e) => setHonorVals((prev) => ({ ...prev, [key]: e.target.value }))}
-                      placeholder="Jugador"
-                      style={{ ...selStyle, flex: 1 }} />
+                    <input type="text" list="player-datalist" value={val} onChange={(e) => setHonorVals((prev) => ({ ...prev, [key]: e.target.value }))} placeholder="Jugador" style={{ ...selStyle, flex: 1 }} />
                   )}
                   <SaveBtn status={status} onClick={() => saveHonor(key)} disabled={!val} />
                   {val && !confirming && <ClearBtn onClick={() => setConfirmClear(key)} />}
                 </div>
                 {confirming && (
                   <div style={{ borderBottom: `1px solid ${C.line}` }}>
-                    <ConfirmBar
-                      message={`¿Limpiar ${label}?`}
-                      onCancel={() => setConfirmClear(null)}
-                      onConfirm={() => clearHonor(key)}
-                    />
+                    <ConfirmBar message={`¿Limpiar ${label}?`} onCancel={() => setConfirmClear(null)} onConfirm={() => clearHonor(key)} />
                   </div>
                 )}
               </div>
@@ -851,99 +945,150 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
         </div>
       )}
 
-      {/* ── POSICIONES ── */}
-      {adminTab === "posiciones" && (
-        <div>
-          {GRUPOS.map((g) => {
-            const isOpen = openGroups.has(g);
-            const groupTeams = GRUPOS_EQUIPOS[g] ?? [];
-            const status = posStatus[g] ?? "idle";
-            const hasValues = [1,2,3,4].some((r) => posVals[g]?.[r]);
-            const confirming = confirmClear === "grupo_" + g;
-            return (
-              <div key={g} style={{ borderBottom: `1px solid ${C.line}` }}>
-                <button
-                  onClick={() => toggleGroup(g)}
-                  style={{
-                    width: "100%", display: "flex", justifyContent: "space-between",
-                    alignItems: "center", padding: "12px 0",
-                    border: "none", background: "none", cursor: "pointer",
-                  }}
-                >
-                  <span style={{ fontWeight: 700, fontSize: 14, color: C.ink }}>Grupo {g}</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    {posVals[g]?.[1] && (
-                      <span style={{ fontSize: 11, color: C.muted }}>{posVals[g][1]}</span>
-                    )}
-                    <span style={{
-                      fontSize: 12, color: C.muted,
-                      transform: isOpen ? "rotate(90deg)" : "none",
-                      transition: "transform .15s ease",
-                      display: "inline-block",
-                    }}>›</span>
-                  </div>
-                </button>
-                {isOpen && (
-                  <div style={{ paddingBottom: 14 }}>
-                    {[1, 2, 3, 4].map((rank) => (
-                      <div key={rank} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                        <span style={{
-                          fontFamily: "'DM Mono', monospace", fontSize: 12,
-                          color: C.muted, width: 20, flexShrink: 0, textAlign: "right",
-                        }}>
-                          {rank}º
-                        </span>
-                        <select
-                          value={posVals[g]?.[rank] ?? ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setPosVals((prev) => ({ ...prev, [g]: { ...(prev[g] ?? {}), [rank]: val } }));
+      {/* ── POSICIONES (GRID DE GRUPOS + TABLA DE TERCEROS DRAG & DROP) ── */}
+      {adminTab === "posiciones" && (() => {
+        const tercerosStatus = posStatus.terceros ?? "idle";
+        const confirmingTerceros = confirmClear === "terceros";
+
+        return (
+          <div>
+            <div style={{ marginBottom: 20 }}>
+              <span style={{ fontSize: 12.5, color: C.muted, fontWeight: 600 }}>
+                Las tablas se calculan solas por desempate matemático. Arrastra las filas para solucionar empates manuales específicos si es necesario.
+              </span>
+            </div>
+
+            {/* Grid Interactivo de Grupos con Drag and Drop */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginBottom: 32 }}>
+              {GRUPOS.map(g => {
+                const status = posStatus[g] ?? "idle";
+                const confirming = confirmClear === "grupo_" + g;
+                return (
+                  <div key={g} style={{ border: `1px solid ${C.line}`, borderRadius: 4, padding: 12, background: "#fff", display: "flex", flexDirection: "column" }}>
+                    <h4 style={{ fontFamily: "'Anton', sans-serif", fontSize: 14, color: C.ink, margin: "0 0 8px", textTransform: "uppercase", borderBottom: `2px solid ${C.pitch}`, paddingBottom: 4 }}>
+                      Grupo {g}
+                    </h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1, marginBottom: 10 }}>
+                      {ordenGrupos[g]?.map((equipo, index) => (
+                        <div
+                          key={equipo}
+                          draggable
+                          onDragStart={() => handleDragStart(index, g)}
+                          onDragOver={handleDragOver}
+                          onDrop={() => handleDropGrupo(index, g)}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 6, padding: "6px 8px",
+                            background: C.chalk, border: `1px dashed ${C.line}`, borderRadius: 3,
+                            cursor: "grab", userSelect: "none"
                           }}
-                          style={selStyle}
                         >
-                          <option value="">—</option>
-                          {groupTeams.map((t) => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                      </div>
-                    ))}
-                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-                      {hasValues && !confirming && (
+                          <span style={{ fontSize: 11, fontWeight: 700, color: C.muted, width: 16 }}>{index + 1}º</span>
+                          <span style={{ fontSize: 12.5, color: C.ink, fontWeight: 600, flex: 1 }}>{equipo}</span>
+                          <span style={{ fontSize: 12, color: C.muted, pointerEvents: "none" }}>☰</span>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, alignItems: "center" }}>
+                      {!confirming && (
                         <button
                           onClick={() => setConfirmClear("grupo_" + g)}
-                          style={{
-                            padding: "5px 10px", borderRadius: 3, fontSize: 11, fontWeight: 700,
-                            border: `1px solid ${C.line}`, background: "transparent",
-                            color: C.muted, cursor: "pointer",
-                          }}
+                          style={{ padding: "4px 8px", borderRadius: 3, fontSize: 11, fontWeight: 700, border: `1px solid ${C.line}`, background: "transparent", color: C.muted, cursor: "pointer" }}
                         >
-                          Limpiar
+                          Reiniciar
                         </button>
                       )}
-                      <SaveBtn status={status} onClick={() => saveGrupo(g)} />
+                      <SaveBtn status={status} onClick={() => savePosicionesGrupo(g)} />
                     </div>
                     {confirming && (
-                      <ConfirmBar
-                        message={`¿Limpiar posiciones del Grupo ${g}?`}
-                        onCancel={() => setConfirmClear(null)}
-                        onConfirm={() => clearGrupo(g)}
-                      />
+                      <div style={{ marginTop: 6 }}>
+                        <ConfirmBar message={`¿Resetear orden matemático del Grupo ${g}?`} onCancel={() => setConfirmClear(null)} onConfirm={() => clearPosicionesGrupo(g)} />
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                );
+              })}
+            </div>
 
-      {/* ── CLASIFICADOS ── */}
+            <hr style={{ border: "none", borderTop: `1px dashed ${C.line}`, margin: "24px 0" }} />
+
+            {/* Tabla Interactiva de Mejores Terceros con Drag and Drop propio */}
+            <div style={{ maxWidth: 520, margin: "0 auto", paddingBottom: 24 }}>
+              <h3 style={{ fontFamily: "'Anton', sans-serif", fontSize: 16, color: C.ink, marginBottom: 4, textTransform: "uppercase", textAlign: "center" }}>
+                Tabla de Mejores Terceros
+              </h3>
+              <p style={{ color: C.muted, fontSize: 12, textAlign: "center", margin: "0 0 14px" }}>
+                Pasan los 8 primeros (resaltados en verde). Arrastra las filas para solucionar empates manuales si es necesario.
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 14 }}>
+                {ordenTerceros.map((equipo, index) => {
+                  const dataTeam = listaTercerosCalculados.find(t => t.equipo === equipo);
+                  const esClasificado = index < 8;
+                  return (
+                    <div
+                      key={equipo}
+                      draggable
+                      onDragStart={() => handleDragStart(index, "terceros")}
+                      onDragOver={handleDragOver}
+                      onDrop={() => handleDropTerceros(index)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+                        background: esClasificado ? "#E6F0E9" : "#fff",
+                        border: `1px solid ${esClasificado ? "#1B5E3A" : C.line}`, borderRadius: 4,
+                        cursor: "grab", userSelect: "none"
+                      }}
+                    >
+                      <span style={{ fontSize: 12, fontWeight: 700, color: esClasificado ? "#1B5E3A" : C.muted, width: 18 }}>
+                        {index + 1}º
+                      </span>
+                      <span style={{ fontSize: 12.5, color: C.ink, fontWeight: 700, flex: 1 }}>
+                        {equipo} <span style={{ fontSize: 10, color: C.muted, fontWeight: 400 }}>(Gr. {dataTeam?.grupo ?? "?"})</span>
+                      </span>
+                      <div style={{ display: "flex", gap: 8, fontSize: 11, fontFamily: "'DM Mono', monospace", color: C.ink }}>
+                        <span><b>PTS:</b> {dataTeam?.pts ?? 0}</span>
+                        <span><b>DG:</b> {dataTeam?.dg ?? 0}</span>
+                        <span><b>GF:</b> {dataTeam?.gf ?? 0}</span>
+                      </div>
+                      <span style={{ fontSize: 12, color: C.muted, marginLeft: 4, pointerEvents: "none" }}>☰</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Botones de control para la tabla de terceros */}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, alignItems: "center" }}>
+                {!confirmingTerceros && (
+                  <button
+                    onClick={() => setConfirmClear("terceros")}
+                    style={{ padding: "5px 10px", borderRadius: 3, fontSize: 11, fontWeight: 700, border: `1px solid ${C.line}`, background: "transparent", color: C.muted, cursor: "pointer" }}
+                  >
+                    Reiniciar Terceros
+                  </button>
+                )}
+                <SaveBtn status={tercerosStatus} onClick={savePosicionesTerceros} />
+              </div>
+              {confirmingTerceros && (
+                <div style={{ marginTop: 6 }}>
+                  <ConfirmBar message={`¿Resetear orden matemático de la tabla de terceros?`} onCancel={() => setConfirmClear(null)} onConfirm={clearPosicionesTerceros} />
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── CLASIFICADOS (ORIGINAL COMO ESTABA) ── */}
       {adminTab === "clasificados" && (() => {
         const rondaLabel = CLASIF_RONDAS.find((r) => r.key === clasifRonda)?.label ?? clasifRonda;
         const count = clasifSels[clasifRonda]?.size ?? 0;
         const confirming = confirmClear === "clasif_" + clasifRonda;
+
         return (
           <div>
-            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 16 }}>
+            <p style={subStyle}>Selecciona manualmente los equipos clasificados para cada ronda eliminatoria.</p>
+            
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 14, marginBottom: 16 }}>
               {CLASIF_RONDAS.map(({ key, label }) => {
                 const active = clasifRonda === key;
                 return (
@@ -951,11 +1096,8 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
                     key={key}
                     onClick={() => { setClasifRonda(key); setConfirmClear(null); }}
                     style={{
-                      padding: "5px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700,
-                      cursor: "pointer",
-                      border: `1px solid ${active ? C.ink : C.line}`,
-                      background: active ? C.ink : "transparent",
-                      color: active ? C.chalk : C.muted,
+                      padding: "5px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                      border: `1px solid ${active ? C.ink : C.line}`, background: active ? C.ink : "transparent", color: active ? C.chalk : C.muted,
                     }}
                   >
                     {label}
@@ -972,11 +1114,8 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
                     key={equipo}
                     onClick={() => toggleTeam(clasifRonda, equipo)}
                     style={{
-                      padding: "5px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600,
-                      cursor: "pointer",
-                      border: `1px solid ${selected ? C.pitch : C.line}`,
-                      background: selected ? C.pitch : "transparent",
-                      color: selected ? C.chalk : C.muted,
+                      padding: "5px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                      border: `1px solid ${selected ? C.pitch : C.line}`, background: selected ? C.pitch : "transparent", color: selected ? C.chalk : C.muted,
                     }}
                   >
                     {equipo}
@@ -991,31 +1130,21 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
                 {!confirming && (
                   <button
                     onClick={() => setConfirmClear("clasif_" + clasifRonda)}
-                    style={{
-                      padding: "5px 10px", borderRadius: 3, fontSize: 11, fontWeight: 700,
-                      border: `1px solid ${C.line}`, background: "transparent",
-                      color: C.muted, cursor: "pointer",
-                    }}
+                    style={{ padding: "5px 10px", borderRadius: 3, fontSize: 11, fontWeight: 700, border: `1px solid ${C.line}`, background: "transparent", color: C.muted, cursor: "pointer" }}
                   >
                     Vaciar
                   </button>
                 )}
-                <SaveBtn
-                  status={clasifStatus[clasifRonda] ?? "idle"}
-                  onClick={() => saveClasif(clasifRonda)}
-                />
+                <SaveBtn status={clasifStatus[clasifRonda] ?? "idle"} onClick={() => saveClasif(clasifRonda)} />
               </div>
             </div>
             {confirming && (
-              <ConfirmBar
-                message={`¿Vaciar clasificados de ${rondaLabel}?`}
-                onCancel={() => setConfirmClear(null)}
-                onConfirm={() => clearClasif(clasifRonda)}
-              />
+              <ConfirmBar message={`¿Vaciar clasificados de ${rondaLabel}?`} onCancel={() => setConfirmClear(null)} onConfirm={() => clearClasif(clasifRonda)} />
             )}
           </div>
         );
       })()}
+
       {/* ── PORTADAS ── */}
       {adminTab === "portadas" && (() => {
         const fileError = portFile && !portFile.type.startsWith("image/");
@@ -1024,78 +1153,36 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
 
         return (
           <div>
-            {/* Upload form */}
-            <p style={subStyle}>Subir nueva portada.</p>
+            <p style={subStyle}>Subir nueva portada del día.</p>
             <div style={{ marginTop: 14 }}>
-
-              {/* File picker */}
               <input
-                key={portFileKey}
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  setPortFile(e.target.files?.[0] ?? null);
-                  setPortUploadStatus("idle");
-                  setPortUploadError("");
-                }}
+                key={portFileKey} type="file" accept="image/*"
+                onChange={(e) => { setPortFile(e.target.files?.[0] ?? null); setPortUploadStatus("idle"); setPortUploadError(""); }}
                 style={{ fontSize: 12.5, marginBottom: 6, display: "block" }}
               />
-              {fileError && (
-                <p style={{ fontSize: 11, color: C.rojo, margin: "0 0 6px" }}>Solo se admiten imágenes.</p>
-              )}
-              {sizeWarning && (
-                <p style={{ fontSize: 11, color: "#9A6700", margin: "0 0 6px" }}>El archivo supera 5 MB — puede tardar.</p>
-              )}
+              {fileError && <p style={{ fontSize: 11, color: C.rojo, margin: "0 0 6px" }}>Solo se admiten imágenes.</p>}
+              {sizeWarning && <p style={{ fontSize: 11, color: "#9A6700", margin: "0 0 6px" }}>El archivo supera 5 MB — puede tardar.</p>}
 
-              {/* Title */}
-              <input
-                type="text"
-                value={portTitulo}
-                onChange={(e) => setPortTitulo(e.target.value)}
-                placeholder="Título (opcional)"
-                style={{ ...selStyle, width: "100%", boxSizing: "border-box" as const, marginBottom: 8 }}
-              />
+              <input type="text" value={portTitulo} onChange={(e) => setPortTitulo(e.target.value)} placeholder="Título (opcional)" style={{ ...selStyle, width: "100%", boxSizing: "border-box", marginBottom: 8 }} />
+              <input type="date" value={portFecha} onChange={(e) => setPortFecha(e.target.value)} style={{ ...selStyle, width: "auto", marginBottom: 12 }} />
 
-              {/* Date */}
-              <input
-                type="date"
-                value={portFecha}
-                onChange={(e) => setPortFecha(e.target.value)}
-                style={{ ...selStyle, width: "auto", marginBottom: 12 }}
-              />
-
-              {/* Upload button */}
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <button
-                  onClick={handleUploadPortada}
-                  disabled={!canUpload}
+                  onClick={handleUploadPortada} disabled={!canUpload}
                   style={{
-                    padding: "6px 16px", borderRadius: 3, fontSize: 12, fontWeight: 700,
-                    border: "none", cursor: canUpload ? "pointer" : "default",
-                    background: portUploadStatus === "saved" ? "#E6F0E9"
-                      : portUploadStatus === "error" ? "#F5E6E6"
-                      : canUpload ? C.pitch : C.line,
-                    color: portUploadStatus === "saved" ? "#1B5E3A"
-                      : portUploadStatus === "error" ? C.rojo
-                      : canUpload ? C.chalk : C.muted,
+                    padding: "6px 16px", borderRadius: 3, fontSize: 12, fontWeight: 700, border: "none", cursor: canUpload ? "pointer" : "default",
+                    background: portUploadStatus === "saved" ? "#E6F0E9" : portUploadStatus === "error" ? "#F5E6E6" : canUpload ? C.pitch : C.line,
+                    color: portUploadStatus === "saved" ? "#1B5E3A" : portUploadStatus === "error" ? C.rojo : canUpload ? C.chalk : C.muted,
                   }}
                 >
-                  {portUploadStatus === "saving" ? "…"
-                    : portUploadStatus === "saved" ? "✓ Subida"
-                    : portUploadStatus === "error" ? "Error"
-                    : "Subir"}
+                  {portUploadStatus === "saving" ? "…" : portUploadStatus === "saved" ? "✓ Subida" : portUploadStatus === "error" ? "Error" : "Subir"}
                 </button>
-                {portUploadError && (
-                  <span style={{ fontSize: 11, color: C.rojo }}>{portUploadError}</span>
-                )}
+                {portUploadError && <span style={{ fontSize: 11, color: C.rojo }}>{portUploadError}</span>}
               </div>
             </div>
 
-            {/* Portadas list */}
             <div style={{ marginTop: 28 }}>
-              <p style={{ ...subStyle, marginBottom: 10 }}>
-                {portadasList.length} portada{portadasList.length !== 1 ? "s" : ""} subida{portadasList.length !== 1 ? "s" : ""}
-              </p>
+              <p style={{ ...subStyle, marginBottom: 10 }}>{portadasList.length} portada{portadasList.length !== 1 ? "s" : ""} subida{portadasList.length !== 1 ? "s" : ""}</p>
               {portadasLoading ? (
                 <p style={{ color: C.muted, fontSize: 13 }}>Cargando…</p>
               ) : portadasList.length === 0 ? (
@@ -1106,40 +1193,18 @@ function AdminContent({ players, real, extra, youtube, onResultSaved, onResultCl
                     const confirming = confirmDeletePortada === p.id;
                     return (
                       <div key={p.id}>
-                        <div style={{
-                          display: "flex", alignItems: "center", gap: 10,
-                          padding: "10px 0",
-                          borderBottom: confirming ? "none" : `1px solid ${C.line}`,
-                        }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: confirming ? "none" : `1px solid ${C.line}` }}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={p.url}
-                            alt={p.titulo ?? "Portada"}
-                            loading="lazy"
-                            style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 4, flexShrink: 0 }}
-                          />
+                          <img src={p.url} alt={p.titulo ?? "Portada"} loading="lazy" style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{
-                              fontSize: 13, fontWeight: 600, color: C.ink,
-                              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                            }}>
-                              {p.titulo ?? "(sin título)"}
-                            </div>
-                            <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
-                              {formatFechaShort(p.fecha)}
-                            </div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.titulo ?? "(sin título)"}</div>
+                            <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{formatFechaShort(p.fecha)}</div>
                           </div>
-                          {!confirming && (
-                            <ClearBtn onClick={() => setConfirmDeletePortada(p.id)} />
-                          )}
+                          {!confirming && <ClearBtn onClick={() => setConfirmDeletePortada(p.id)} />}
                         </div>
                         {confirming && (
                           <div style={{ borderBottom: `1px solid ${C.line}` }}>
-                            <ConfirmBar
-                              message={`¿Borrar "${p.titulo ?? "esta portada"}"?`}
-                              onCancel={() => setConfirmDeletePortada(null)}
-                              onConfirm={() => handleDeletePortada(p.id, p.storage_path)}
-                            />
+                            <ConfirmBar message={`¿Borrar "${p.titulo ?? "esta portada"}"?`} onCancel={() => setConfirmDeletePortada(null)} onConfirm={() => handleDeletePortada(p.id, p.storage_path)} />
                           </div>
                         )}
                       </div>

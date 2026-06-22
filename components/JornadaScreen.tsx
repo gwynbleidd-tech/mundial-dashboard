@@ -38,19 +38,16 @@ function getDefaultDay(): string {
 
 function formatDia(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
-  // new Date(y, m-1, d) usa hora local → día de semana fiable sin desfase de zona
   const date = new Date(y, m - 1, d);
   const weekday = date.toLocaleDateString("es-ES", { weekday: "long" });
   const month = date.toLocaleDateString("es-ES", { month: "long" });
   return `${weekday} ${d} de ${month}`;
 }
 
-// Extrae HH:mm del ISO sin parsear → sin conversión de zona
 function formatHora(kickoff: string): string {
   return kickoff.slice(11, 16);
 }
 
-// Hora actual en Europe/Madrid como "YYYY-MM-DDTHH:MM" → comparación directa con kickoff
 function nowMadrid(): string {
   return new Date()
     .toLocaleString("sv-SE", { timeZone: "Europe/Madrid" })
@@ -202,6 +199,10 @@ export default function JornadaScreen({ players, real, youtube }: Props) {
           const isOpen = open.has(fixture.partido);
           const yt = youtube[fixture.partido];
 
+          // 1. Buscamos a Larios y su predicción para este partido
+          const larios = players.find(p => p.nombre.toLowerCase().includes("larios"));
+          const lariosPred = larios?.fase_grupos.find(m => m.partido === fixture.partido)?.pred;
+
           return (
             <div key={fixture.partido} style={{ borderBottom: `1px solid ${C.line}` }}>
 
@@ -279,6 +280,12 @@ export default function JornadaScreen({ players, real, youtube }: Props) {
                     const s = r ? scoreMatch(pm.pred, r, GRUPO_PTS) : null;
                     const hit = (s?.hit ?? null) as "exacto" | "signo" | "fallo" | null;
 
+                    // 2. Comprobar si comparte el mismo resultado exacto que Larios (y que no sea el propio Larios)
+                    const esLarios = p.id === larios?.id;
+                    const coincideConLarios = !esLarios && lariosPred && 
+                      lariosPred.local === pm.pred.local && 
+                      lariosPred.visitante === pm.pred.visitante;
+
                     return (
                       <div
                         key={p.id}
@@ -313,6 +320,27 @@ export default function JornadaScreen({ players, real, youtube }: Props) {
                         }}>
                           {s ? `+${s.pts} pts` : "–"}
                         </span>
+
+                        {/* 3. Renderizado de las etiquetas de gafe condicionales */}
+                        {coincideConLarios && (
+                          <span style={{ fontSize: 11, fontWeight: 600, marginLeft: 4 }}>
+                            {(() => {
+                              if (!r) {
+                                // Sin resultado real aún
+                                return <span style={{ color: C.rojo }}>Gafado 👓</span>;
+                              }
+                              // Con resultado real ya relleno
+                              if (s!.pts === 0) {
+                                return <span style={{ color: C.rojo }}>Efecto Larios!👓</span>;
+                              } else if (s!.pts === 2 || s!.pts === 3) {
+                                return <span style={{ color: "#D4A06A" }}>Te libraste!</span>;
+                              } else if (s!.pts >= 6) {
+                                return <span style={{ color: "#2E8B57" }}>Milagro!</span>;
+                              }
+                              return null;
+                            })()}
+                          </span>
+                        )}
                       </div>
                     );
                   })}
