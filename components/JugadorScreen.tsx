@@ -226,9 +226,9 @@ function GroupView({
           const ptsTotales = (det?.ptsPosicion ?? 0) + (det?.ptsClasif ?? 0);
           const clasificaReal = det?.clasificaReal ?? false;
 
-          let rowBg = "transparent";
-          let textColor = C.ink;
-          let indicatorColor = C.muted;
+          let rowBg: string = "transparent";
+          let textColor: string = C.ink;
+          let indicatorColor: string = C.muted;
 
           if (realStat && realStat.pj > 0) {
             if (clasificaReal) {
@@ -698,15 +698,14 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
         </div>
 
         {(() => {
-          const rawMatches = (player as unknown as Record<string, Match[] | undefined>)[`enfr_${rondaTab}`];
-          const matches = Array.isArray(rawMatches) ? rawMatches : [];
+          const matches = (player as unknown as Record<string, Match[]>)[`enfr_${rondaTab}`];
           const ronda = KO_RONDAS.find((r) => r.key === rondaTab);
           return (
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: C.muted, marginBottom: 6 }}>
                 {ronda?.label}
               </div>
-              {matches.length
+              {matches?.length
                 ? matches.map((m, i) => (
                     <MatchRow key={i} local={m.local} visitante={m.visitante} pred={m.pred} />
                   ))

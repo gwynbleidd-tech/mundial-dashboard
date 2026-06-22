@@ -24,7 +24,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className="h-full">
+    <html lang="es" className="h-full" suppressHydrationWarning>
       <head>
         <link rel="apple-touch-icon" href="/clipeto/icon-180-v2.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
