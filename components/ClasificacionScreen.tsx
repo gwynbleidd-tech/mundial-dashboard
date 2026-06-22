@@ -99,9 +99,8 @@ function barColor(position: number): string {
   if (position === 0) return "#C8A23A"; // oro
   if (position === 1) return "#A8A9AD"; // plata
   if (position === 2) return "#CD7F32"; // bronce
-  // posiciones 3-7 (4º a 8º): verde con opacidad decreciente
-  const opacity = 1 - ((position - 3) / 4) * 0.65; // 1.0 en 4º, 0.35 en 8º
-  return `rgba(27, 94, 58, ${opacity.toFixed(2)})`; // C.pitch con opacidad
+  const opacity = 1 - ((position - 3) / 4) * 0.65;
+  return `rgba(27, 94, 58, ${opacity.toFixed(2)})`;
 }
 
 function BadgesPanel({ badges, onClose }: { badges: PlayerBadge[]; onClose: () => void }) {
@@ -279,7 +278,6 @@ export default function ClasificacionScreen({ ranked, players, real, extra, load
             const isPodio = anyPlayed && i < 3;
             const isPozo = showLantern && i === lastIdx;
 
-            // Paletas por posición
             const ROW_STYLES = isPodio ? [
               { bg: "#FDF8E7", border: "#E8D48A", ptsColor: "#B8860B", mutedColor: "#9A7B2A", badgeBg: "rgba(200,162,58,0.15)" },
               { bg: "#F5F5F6", border: "#C8C9CD", ptsColor: "#6B7280", mutedColor: "#9CA3AF", badgeBg: "rgba(168,169,173,0.15)" },
@@ -334,7 +332,6 @@ export default function ClasificacionScreen({ ranked, players, real, extra, load
                     </span>
                     {isPozo && (
                       <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src="/clipeto/clipeto.svg" alt="" style={{ height: 14, width: "auto" }} />
                         <span style={{ fontSize: 10, color: "#C47A7A", letterSpacing: ".02em" }}>
                           This guy uses Clipeto
@@ -342,6 +339,8 @@ export default function ClasificacionScreen({ ranked, players, real, extra, load
                       </span>
                     )}
                   </div>
+                  
+                  {/* Fila de la barra con ancho reservado para insignias */}
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
                     <div style={{ flex: 1, height: 6, background: barBg, borderRadius: 3, overflow: "hidden" }}>
                       <div style={{
@@ -353,15 +352,15 @@ export default function ClasificacionScreen({ ranked, players, real, extra, load
                         boxShadow: isPozo ? "0 0 4px rgba(180,50,50,0.25)" : "none",
                       }} />
                     </div>
-                    {(badgesByPlayer[r.player.id] ?? []).length > 0 && (
-                      <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
-                        {(badgesByPlayer[r.player.id] ?? []).map(pb => (
-                          <span key={pb.badge.id} style={{ fontSize: 12, lineHeight: 1 }} title={pb.badge.name}>
-                            {pb.badge.emoji}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    
+                    {/* Bloque fijo de 48px para evitar desajustes visuales en la barra */}
+                    <div style={{ width: 48, display: "flex", justifyContent: "flex-start", gap: 2, flexShrink: 0 }}>
+                      {(badgesByPlayer[r.player.id] ?? []).map(pb => (
+                        <span key={pb.badge.id} style={{ fontSize: 12, lineHeight: 1 }} title={pb.badge.name}>
+                          {pb.badge.emoji}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -408,7 +407,6 @@ export default function ClasificacionScreen({ ranked, players, real, extra, load
       {/* Vistas de evolución */}
       {(view === "dia" || view === "partido") && (
         <div>
-          {/* Toggles de highlight */}
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
             {HIGHLIGHT_TOGGLES.map(({ id, label, emoji, color }) => {
               const active = highlightMode === id;
