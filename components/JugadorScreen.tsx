@@ -19,7 +19,7 @@ interface Props {
   onPick: (id: string) => void;
   real: RealResults;
   extra: RealExtra;
-  ranked?: RankedEntry[]; // Opcional por seguridad si no viene del padre
+  ranked?: RankedEntry[]; 
 }
 
 // ---- constants ----
@@ -167,7 +167,6 @@ function GroupView({
   mejoresTerceros: ReturnType<typeof calcMejoresTerceros>;
   extra: RealExtra;
 }) {
-  // PRIORIZAR EL ORDEN MANUAL DEL ADMIN SOBRE EL CÁLCULO MATEMÁTICO
   const standing = useMemo(() => {
     const st = calcGrupoStanding(grupo, real);
     const guardadas: string[] = [];
@@ -188,6 +187,7 @@ function GroupView({
     player.posicion_grupos,
     player.clasif_dieciseisavos,
   );
+  
   const { mejor, peor } = bestWorstScenario(
     grupo,
     standing.stats,
@@ -326,7 +326,7 @@ function GroupView({
 
       <div style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
-        marginBottom: 16, padding: "8px 0",
+        marginBottom: 12, padding: "8px 0",
         borderBottom: `2px solid ${C.line}`,
       }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: ".04em", textTransform: "uppercase" }}>
@@ -336,6 +336,24 @@ function GroupView({
           {scorePos.total > 0 ? `+${scorePos.total}` : "0"} pts
         </span>
       </div>
+
+      {/* ── SIMULACIÓN DEL MEJOR ESCENARIO INTEGRADA DIRECTAMENTE DEBAJO DEL TOTAL ── */}
+      {standing.pendientes.length > 0 && mejor && (
+        <div style={{ 
+          marginBottom: 16, padding: "10px 12px", 
+          background: "#E6F0E9", borderRadius: 6, border: "1px solid #2E8B57" 
+        }}>
+          <div style={{ fontSize: 9, fontWeight: 800, color: "#1B5E3A", marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+            💡 Simulación · Apoya este resultado para sumar más:
+          </div>
+          <div style={{ fontSize: 12, color: C.ink, fontWeight: 600, lineHeight: "1.3" }}>
+            {mejor.descripcion} 
+            <span style={{ color: "#1B5E3A", marginLeft: 4, fontFamily: "'DM Mono', monospace", fontWeight: 700 }}>
+              (+{mejor.pts} pts posibles)
+            </span>
+          </div>
+        </div>
+      )}
 
       <div style={{ marginBottom: 12 }}>
         {matches.map((m, i) => {
@@ -406,11 +424,8 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
   const player = players.find((p) => p.id === picked) ?? players[0];
   if (!player) return null;
 
-  // 1. FOTOGRAFÍA FIJA DE LA CLASIFICACIÓN (Original e Inmutable)
   const rankingBaseOficial = useMemo(() => {
     if (ranked && ranked.length > 0) return ranked;
-    
-    // Si el padre no lo envía, creamos una copia ordenada instantánea con la puntuación real de hoy
     return players.map(p => ({
       player: p,
       score: scorePlayer(p, real, extra)
@@ -422,11 +437,9 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
   const equipoGrupo = buildEquipoGrupoMap(player);
   const mejoresTerceros = calcMejoresTerceros(real);
 
-  // 2. SUMAR TODOS LOS PUNTOS PROVISIONALES DE GRUPOS DE ESTE JUGADOR SELECCIONADO
   const totalPosicionesGlobal = GRUPOS.reduce((acc, g) => {
     const standing = calcGrupoStanding(g, real);
     
-    // Inyectar el orden manual del Admin para calcular los puntos correctamente en el global
     const guardadas: string[] = [];
     for (let r = 1; r <= 4; r++) {
       const v = extra[normPos(`${r}º GRUPO ${g}`)];
@@ -446,21 +459,17 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
     return acc + scorePos.total;
   }, 0);
 
-  // 3. SIMULACIÓN PARALELA (Tomamos la foto fija y le sumamos los puntos provisionales a todos los jugadores)
   const { puestoActual, puestoSimulado } = useMemo(() => {
     if (!rankingBaseOficial || rankingBaseOficial.length === 0) {
       return { puestoActual: 0, puestoSimulado: 0 };
     }
 
-    // Buscamos la posición real del jugador en la clasificación original
     const pActual = rankingBaseOficial.findIndex(r => r.player?.id === player.id) + 1;
 
-    // Generamos la tabla paralela e independiente
     const tablaSimulada = rankingBaseOficial.map(r => {
       const ptsPosicionesSimuladas = GRUPOS.reduce((acc, g) => {
         const standing = calcGrupoStanding(g, real);
         
-        // Inyectar el orden manual del Admin en la simulación global de todos los jugadores
         const guardadas: string[] = [];
         for (let r = 1; r <= 4; r++) {
           const v = extra[normPos(`${r}º GRUPO ${g}`)];
@@ -479,7 +488,6 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
       };
     });
 
-    // Ordenamos este escenario provisional alternativo
     const tablaOrdenada = [...tablaSimulada].sort((a, b) => b.puntosSimulados - a.puntosSimulados);
     const pSimulado = tablaOrdenada.findIndex(p => p.id === player.id) + 1;
 
@@ -612,7 +620,6 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
                   </span>
                 </div>
                 
-                {/* Texto dinámico protegido y recalculado de manera segura */}
                 {isHydrated && rankingBaseOficial.length > 0 && puestoActual > 0 ? (
                   <div style={{ 
                     marginTop: 8, paddingTop: 8, 
