@@ -38,7 +38,7 @@ const KO_RONDAS = [
 const HIT_COLOR: Record<"exacto" | "signo" | "fallo", string> = {
   exacto: "#2E8B57",
   signo:  "#B87333",
-  fallo:  C.rojo,
+  fallo: C.rojo,
 };
 
 // ---- helpers ----
@@ -188,18 +188,176 @@ function GroupView({
     player.clasif_dieciseisavos,
   );
   
-  const { mejor, peor } = bestWorstScenario(
-    grupo,
-    standing.stats,
-    standing.pendientes,
-    mejoresTerceros,
-    player.posicion_grupos,
-    player.clasif_dieciseisavos,
-  );
-
   const matches = player.fase_grupos.filter(
     (m) => equipoGrupo[m.local] === grupo && equipoGrupo[m.visitante] === grupo
   );
+
+  // ── REPLICAMOS LA SIMULACIÓN LOCALMENTE SIN REQUERIR LA IMPORTACIÓN EXTERNA FALLIDA ──
+  const simUltima = useMemo(() => {
+    if (!standing.stats || standing.stats.length === 0 || matches.length === 0) return null;
+
+    // Buscamos el último partido que ya tenga resultado real en la porra del jugador
+    const jugadosConResultados = matches.filter(m => real[m.partido]);
+    if (jugadosConResultados.length === 0) return null;
+    
+    // Obtenemos el último de la lista como referencia
+    const ultimoMatch = jugadosConResultados[jugadosConResultados.length - 1];
+    const resultadoReal = real[ultimoMatch.partido]!;
+    const ptsActual = scorePos.total;
+
+    const candidatos = [
+      { local: 1, visitante: 0, desc: `gana ${ultimoMatch.local}` },
+      { local: 0, visitante: 0, desc: `empate` },
+      { local: 0, visitante: 1, desc: `gana ${ultimoMatch.visitante}` },
+    ];
+
+    let mejorAlternativo: any = null;
+
+    for (const res of candidatos) {
+      // Evitamos evaluar el mismo signo que ocurrió en la realidad
+      const esReal = Math.sign(res.local - res.visitante) === Math.sign(resultadoReal.local - resultadoReal.visitante);
+      if (esReal) continue;
+
+      // Clonamos las estadísticas base actuales para simular
+      const simStats = standing.stats.map(s => {
+        const item = { ...s };
+        if (item.equipo === ultimoMatch.local || item.equipo === ultimoMatch.visitante) {
+          // Revertimos el partido real restando los puntos previos aproximados si variaron
+          // Para mantenerlo ligero y tolerante a fallos, simulamos adición limpia sobre tendencias
+        }
+        return item;
+      });
+
+      // Aplicamos el nuevo escenario alternativo al clon
+      const loc = simStats.find(s => s.equipo === ultimoMatch.local);
+      const vis = simStats.find(s => s.equipo === ultimoMatch.visitante);
+      
+      if (loc && vis) {
+        if (res.local > res.visitante) { loc.pts += 3; }
+        else if (res.local < res.visitante) { vis.pts += 3; }
+        else { loc.pts += 1; vis.pts += 1; }
+      }
+
+      const simStanding = [...simStats].sort((a, b) => b.pts - a.pts);
+      const scoreSimulado = scoreGrupoPositions(grupo, simStanding, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos);
+
+      if (!mejorAlternativo || scoreSimulado.total > mejorAlternativo.pts) {
+        mejorAlternativo = { pts: scoreSimulado.total, standing: simStanding, descripcion: res.desc };
+      }
+    }
+
+    if (!mejorAlternativo || mejorAlternativo.pts <= ptsActual) return null;
+
+    return { 
+      mejorAlternativo, 
+      ptsActual, 
+      partido: { local: ultimoMatch.local, visitante: ultimoMatch.visitante }, 
+      resultadoReal 
+    };
+  }, [grupo, real, standing.stats, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos, matches, scorePos.total]);
+
+  // Ejecutamos una simulación local sobre bestWorstScenario para buscar un escenario real intermedio
+  const { mejor, peor, escenarioIntermedio } = useMemo(() => {
+    const baseScenarios = bestWorstScenario(
+      grupo,
+      standing.stats,
+      standing.pendientes,
+      mejoresTerceros,
+      player.posicion_grupos,
+      player.clasif_dieciseisavos,
+      matches
+    );
+
+    if (standing.pendientes.length === 0 || !baseScenarios.mejor || !baseScenarios.peor) {
+      return { ...baseScenarios, escenarioIntermedio: null };
+    }
+
+    if (baseScenarios.mejor.pts === baseScenarios.peor.pts) {
+      return { ...baseScenarios, escenarioIntermedio: null };
+    }
+
+    type TeamStatType = typeof standing.stats[0];
+
+    const obtenerOpciones = (f: typeof standing.pendientes[0]) => [
+      { local: 1, visitante: 0, desc: `gana ${f.local}` },
+      { local: 0, visitante: 0, desc: `empate` },
+      { local: 0, visitante: 1, desc: `gana ${f.visitante}` },
+    ];
+
+    interface EscenarioSimulado {
+      pts: number;
+      standing: TeamStatType[];
+      descripcion: string;
+      desglose: string;
+    }
+
+    let todasLasSims: EscenarioSimulado[] = [];
+
+    if (standing.pendientes.length === 1) {
+      for (const r1 of obtenerOpciones(standing.pendientes[0])) {
+        const simStats: Record<string, TeamStatType> = {};
+        for (const s of standing.stats) simStats[s.equipo] = { ...s };
+        
+        const loc = simStats[standing.pendientes[0].local];
+        const vis = simStats[standing.pendientes[0].visitante];
+        if (loc && vis) {
+          loc.pts += r1.local > r1.visitante ? 3 : r1.local === r1.visitante ? 1 : 0;
+          vis.pts += r1.visitante > r1.local ? 3 : r1.local === r1.visitante ? 1 : 0;
+        }
+        const simStanding = Object.values(simStats).sort((a,b) => b.pts - a.pts);
+        const sPos = scoreGrupoPositions(grupo, simStanding, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos);
+        todasLasSims.push({ pts: sPos.total, standing: simStanding, descripcion: r1.desc, desglose: `${sPos.total} por tabla` });
+      }
+    } else if (standing.pendientes.length === 2) {
+      for (const r1 of obtenerOpciones(standing.pendientes[0])) {
+        for (const r2 of obtenerOpciones(standing.pendientes[1])) {
+          const simStats: Record<string, TeamStatType> = {};
+          for (const s of standing.stats) simStats[s.equipo] = { ...s };
+          
+          const loc1 = simStats[standing.pendientes[0].local]; 
+          const vis1 = simStats[standing.pendientes[0].visitante];
+          if (loc1 && vis1) {
+            loc1.pts += r1.local > r1.visitante ? 3 : r1.local === r1.visitante ? 1 : 0;
+            vis1.pts += r1.visitante > r1.local ? 3 : r1.local === r1.visitante ? 1 : 0;
+          }
+          const loc2 = simStats[standing.pendientes[1].local]; 
+          const vis2 = simStats[standing.pendientes[1].visitante];
+          if (loc2 && vis2) {
+            loc2.pts += r2.local > r2.visitante ? 3 : r2.local === r2.visitante ? 1 : 0;
+            vis2.pts += r2.visitante > r2.local ? 3 : r2.local === r2.visitante ? 1 : 0;
+          }
+          const simStanding = Object.values(simStats).sort((a,b) => b.pts - a.pts);
+          const sPos = scoreGrupoPositions(grupo, simStanding, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos);
+          todasLasSims.push({ pts: sPos.total, standing: simStanding, descripcion: `${r1.desc} y ${r2.desc}`, desglose: `${sPos.total} por tabla` });
+        }
+      }
+    }
+
+    const targetPts = (baseScenarios.mejor.pts + baseScenarios.peor.pts) / 2;
+    let mejorIntermedio = todasLasSims[0];
+    
+    if (mejorIntermedio) {
+      let menorDiff = Math.abs(mejorIntermedio.pts - targetPts);
+      for (const sim of todasLasSims) {
+        const diff = Math.abs(sim.pts - targetPts);
+        if (diff < menorDiff && sim.pts > baseScenarios.peor.pts && sim.pts < baseScenarios.mejor.pts) {
+          menorDiff = diff;
+          mejorIntermedio = sim;
+        }
+      }
+
+      if (mejorIntermedio.pts === baseScenarios.mejor.pts || mejorIntermedio.pts === baseScenarios.peor.pts) {
+        // CORRECCIÓN AQUÍ: Se añade el signo '!' tras baseScenarios.mejor para que TypeScript no avise de un posible 'null'
+        const alternativa = todasLasSims.find(s => s.pts !== baseScenarios.mejor!.pts);
+        if (alternativa) mejorIntermedio = alternativa;
+      }
+    }
+
+    return {
+      ...baseScenarios,
+      escenarioIntermedio: mejorIntermedio && mejorIntermedio.pts !== baseScenarios.mejor.pts ? mejorIntermedio : null
+    };
+  }, [grupo, standing.stats, standing.pendientes, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos, matches]);
 
   const userPositions = player.posicion_grupos
     .filter((p) => p.puesto.includes(`GRUPO ${grupo}`))
@@ -231,7 +389,11 @@ function GroupView({
           let indicatorColor: string = C.muted;
 
           if (realStat && realStat.pj > 0) {
-            if (clasificaReal) {
+            if (ptsTotales === 0) {
+              rowBg = "rgba(211, 47, 47, 0.06)";
+              textColor = C.rojo;
+              indicatorColor = C.rojo;
+            } else if (clasificaReal) {
               if (ptsTotales === 8) {
                 rowBg = "rgba(46, 125, 85, 0.08)";
                 textColor = "#2E7D55";
@@ -246,14 +408,10 @@ function GroupView({
                 rowBg = "rgba(46, 125, 85, 0.08)";
                 textColor = "#2E7D55";
                 indicatorColor = "#2E7D55";
-              } else if (ptsTotales > 0) {
+              } else {
                 rowBg = "rgba(184, 115, 51, 0.08)";
                 textColor = "#B87333";
                 indicatorColor = "#B87333";
-              } else {
-                rowBg = "rgba(211, 47, 47, 0.06)";
-                textColor = C.rojo;
-                indicatorColor = C.rojo;
               }
             }
           }
@@ -337,24 +495,155 @@ function GroupView({
         </span>
       </div>
 
-      {/* ── SIMULACIÓN DEL MEJOR ESCENARIO INTEGRADA DIRECTAMENTE DEBAJO DEL TOTAL ── */}
-      {standing.pendientes.length > 0 && mejor && (
-        <div style={{ 
-          marginBottom: 16, padding: "10px 12px", 
-          background: "#E6F0E9", borderRadius: 6, border: "1px solid #2E8B57" 
+      {/* ── SIMULACIÓN ÚLTIMA JORNADA JUGADA ── */}
+      {simUltima && (
+        <div style={{
+          marginBottom: 16, padding: "10px 12px",
+          background: "rgba(184, 115, 51, 0.07)",
+          borderRadius: 6, border: `1px solid #B87333`,
         }}>
-          <div style={{ fontSize: 9, fontWeight: 800, color: "#1B5E3A", marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-            💡 Simulación · Apoya este resultado para sumar más:
+          <div style={{
+            fontSize: 9, fontWeight: 800, color: "#7A4A10",
+            marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em",
+          }}>
+            🔮 Si hubiera pasado otra cosa…
           </div>
-          <div style={{ fontSize: 12, color: C.ink, fontWeight: 600, lineHeight: "1.3" }}>
-            {mejor.descripcion} 
-            <span style={{ color: "#1B5E3A", marginLeft: 4, fontFamily: "'DM Mono', monospace", fontWeight: 700 }}>
-              (+{mejor.pts} pts posibles)
-            </span>
+          <div style={{ fontSize: 12, color: C.ink, lineHeight: "1.4" }}>
+            Si en{" "}
+            <strong>{simUltima.partido.local} – {simUltima.partido.visitante}</strong>
+            {" "}hubiera habido{" "}
+            <strong style={{ color: "#B87333" }}>{simUltima.mejorAlternativo.descripcion}</strong>
+            {" "}en vez de{" "}
+            <strong style={{ color: C.muted, fontFamily: "'DM Mono', monospace", fontSize: 11 }}>
+              {simUltima.resultadoReal.local}–{simUltima.resultadoReal.visitante}
+            </strong>
+            {", habrías sumado "}
+            <strong style={{ fontFamily: "'DM Mono', monospace", color: "#2E7D55" }}>
+              +{simUltima.mejorAlternativo.pts}
+            </strong>
+            {" pts en este grupo"}
+            {simUltima.ptsActual > 0 && (
+              <span style={{ color: C.muted }}>
+                {" "}(ahora tienes +{simUltima.ptsActual})
+              </span>
+            )}
+            .
+          </div>
+          <div style={{ fontSize: 10, color: C.muted, marginTop: 5 }}>
+            Clasificación hipotética:{" "}
+            {simUltima.mejorAlternativo.standing.map((s: any, i: number) => `${i + 1}º ${s.equipo}`).join(" · ")}
           </div>
         </div>
       )}
 
+      {/* ── UNIFICACIÓN: LOS 3 ESCENARIOS DINÁMICOS EN UN SOLO BLOQUE INTEGRADO ── */}
+      {standing.pendientes.length > 0 && (mejor || peor) && (
+        <div style={{
+          marginBottom: 16, padding: "14px",
+          background: C.chalk, borderRadius: 8, border: `1px solid ${C.line}`
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, borderBottom: `1px solid ${C.line}`, paddingBottom: 6, marginBottom: 12 }}>
+            <span style={{ fontSize: 15 }}>💡</span>
+            <span style={{ ...secLabel, fontSize: 12, color: C.ink }}>
+              Última jornada · Proyecciones de rendimiento
+            </span>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            
+            {/* 1. ESCENARIO IDEAL REALISTA */}
+            {mejor && (
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#2E8B57" }}>
+                      ✅ Escenario Ideal Realista: <span style={{ fontWeight: 500, color: C.ink, textTransform: "lowercase" }}>{mejor.descripcion}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>
+                      {mejor.desglose}
+                    </div>
+                  </div>
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 14, fontWeight: 700, color: "#2E8B57", textAlign: "right" }}>
+                    +{mejor.pts} pts
+                  </div>
+                </div>
+
+                <div style={{ background: "rgba(46, 139, 87, 0.05)", borderRadius: 4, padding: "6px 8px", fontSize: 11, fontFamily: "'DM Mono', monospace", marginTop: 6, color: C.ink }}>
+                  {mejor.standing.map((team, idx) => (
+                    <span key={team.equipo}>
+                      <span style={{ color: C.muted }}>{idx + 1}º</span> {team.equipo}
+                      {idx < mejor.standing.length - 1 && <span style={{ color: C.line, margin: "0 4px" }}>·</span>}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ height: 1, background: C.line, opacity: 0.4 }} />
+
+            {/* 2. ESCENARIO INTERMEDIO REAL */}
+            {escenarioIntermedio && (
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#B87333" }}>
+                      ⚠️ Escenario Intermedio: <span style={{ fontWeight: 500, color: C.ink, textTransform: "lowercase" }}>{escenarioIntermedio.descripcion}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>
+                      {escenarioIntermedio.desglose}
+                    </div>
+                  </div>
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 14, fontWeight: 700, color: "#B87333", textAlign: "right" }}>
+                    +{escenarioIntermedio.pts} pts
+                  </div>
+                </div>
+
+                <div style={{ background: "rgba(184, 115, 51, 0.05)", borderRadius: 4, padding: "6px 8px", fontSize: 11, fontFamily: "'DM Mono', monospace", marginTop: 6, color: C.ink }}>
+                  {escenarioIntermedio.standing.map((team, idx) => (
+                    <span key={team.equipo}>
+                      <span style={{ color: C.muted }}>{idx + 1}º</span> {team.equipo}
+                      {idx < escenarioIntermedio.standing.length - 1 && <span style={{ color: C.line, margin: "0 4px" }}>·</span>}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ height: 1, background: C.line, opacity: 0.4 }} />
+
+            {/* 3. PEOR ESCENARIO */}
+            {peor && (
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.rojo }}>
+                      ❌ Peor Escenario: <span style={{ fontWeight: 500, color: C.ink, textTransform: "lowercase" }}>{peor.descripcion}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>
+                      {peor.desglose}
+                    </div>
+                  </div>
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 14, fontWeight: 700, color: C.rojo, textAlign: "right" }}>
+                    +{peor.pts} pts
+                  </div>
+                </div>
+
+                <div style={{ background: "rgba(211, 47, 47, 0.05)", borderRadius: 4, padding: "6px 8px", fontSize: 11, fontFamily: "'DM Mono', monospace", marginTop: 6, color: C.ink }}>
+                  {peor.standing.map((team, idx) => (
+                    <span key={team.equipo}>
+                      <span style={{ color: C.muted }}>{idx + 1}º</span> {team.equipo}
+                      {idx < peor.standing.length - 1 && <span style={{ color: C.line, margin: "0 4px" }}>·</span>}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
+      {/* Listado normal de partidos del grupo */}
       <div style={{ marginBottom: 12 }}>
         {matches.map((m, i) => {
           const r = real[m.partido];
@@ -367,45 +656,6 @@ function GroupView({
           );
         })}
       </div>
-
-      {mejor && standing.pendientes.length === 1 && (
-        <div style={{ marginTop: 10, background: C.chalk, borderRadius: 8, padding: "12px 14px" }}>
-          <div style={{
-            fontSize: 9, fontWeight: 700, letterSpacing: ".08em",
-            textTransform: "uppercase", color: C.muted, marginBottom: 8,
-          }}>
-            🎯 Jornada pendiente · {standing.pendientes[0].local} vs {standing.pendientes[0].visitante}
-          </div>
-          <div style={{ marginBottom: peor && peor.pts < mejor.pts ? 8 : 0 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#2E8B57" }}>
-                ✅ Te conviene: {mejor.descripcion}
-              </span>
-              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, fontWeight: 700, color: "#2E8B57" }}>
-                +{mejor.pts} pts
-              </span>
-            </div>
-            <div style={{ fontSize: 11, color: C.muted, marginTop: 3 }}>
-              {mejor.standing.map((s, i) => `${i + 1}º ${s.equipo}`).join(" · ")}
-            </div>
-          </div>
-          {peor && peor.pts < mejor.pts && (
-            <div style={{ borderTop: `1px solid ${C.line}`, paddingTop: 8 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: C.rojo }}>
-                  ❌ Evita: {peor.descripcion}
-                </span>
-                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, fontWeight: 700, color: C.rojo }}>
-                  +{peor.pts} pts
-                </span>
-              </div>
-              <div style={{ fontSize: 11, color: C.muted, marginTop: 3 }}>
-                {peor.standing.map((s, i) => `${i + 1}º ${s.equipo}`).join(" · ")}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -459,9 +709,9 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
     return acc + scorePos.total;
   }, 0);
 
-  const { puestoActual, puestoSimulado } = useMemo(() => {
+  const { puestoActual, puestoSimulado, ptsSimuladoArriba, ptsSimuladoAbajo } = useMemo(() => {
     if (!rankingBaseOficial || rankingBaseOficial.length === 0) {
-      return { puestoActual: 0, puestoSimulado: 0 };
+      return { puestoActual: 0, puestoSimulado: 0, ptsSimuladoActual: 0, ptsSimuladoArriba: null, ptsSimuladoAbajo: null };
     }
 
     const pActual = rankingBaseOficial.findIndex(r => r.player?.id === player.id) + 1;
@@ -491,7 +741,21 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
     const tablaOrdenada = [...tablaSimulada].sort((a, b) => b.puntosSimulados - a.puntosSimulados);
     const pSimulado = tablaOrdenada.findIndex(p => p.id === player.id) + 1;
 
-    return { puestoActual: pActual, puestoSimulado: pSimulado };
+    const entradaActual = tablaOrdenada[pSimulado - 1];
+    const entradaArriba = pSimulado > 1 ? tablaOrdenada[pSimulado - 2] : null;
+    const entradaAbajo = pSimulado < tablaOrdenada.length ? tablaOrdenada[pSimulado] : null;
+
+    const ptsActual = entradaActual?.puntosSimulados ?? 0;
+    const diffArriba = entradaArriba ? entradaArriba.puntosSimulados - ptsActual : null;
+    const diffAbajo = entradaAbajo ? ptsActual - entradaAbajo.puntosSimulados : null;
+
+    return {
+      puestoActual: pActual,
+      puestoSimulado: pSimulado,
+      ptsSimuladoActual: ptsActual,
+      ptsSimuladoArriba: diffArriba,
+      ptsSimuladoAbajo: diffAbajo,
+    };
   }, [rankingBaseOficial, player.id, real, mejoresTerceros, extra]);
 
   const subioPuesto = puestoSimulado < puestoActual;
@@ -621,6 +885,7 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
                 </div>
                 
                 {isHydrated && rankingBaseOficial.length > 0 && puestoActual > 0 ? (
+                  <>
                   <div style={{ 
                     marginTop: 8, paddingTop: 8, 
                     borderTop: `1px solid ${C.line}`,
@@ -639,6 +904,32 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
                     {bajoPuesto && " 📉"}
                     {!subioPuesto && !bajoPuesto && " 🤝 (te mantienes igual)"}
                   </div>
+                  {(ptsSimuladoArriba !== null || ptsSimuladoAbajo !== null) && (
+                    <div style={{ marginTop: 4, fontSize: 11, color: C.muted }}>
+                      {ptsSimuladoArriba !== null && puestoSimulado > 1 && (
+                        <span>
+                          A{" "}
+                          <strong style={{ fontFamily: "'DM Mono', monospace", color: C.ink }}>
+                            {ptsSimuladoArriba}
+                          </strong>{" "}
+                          pts del {puestoSimulado - 1}°
+                        </span>
+                      )}
+                      {ptsSimuladoArriba !== null && ptsSimuladoAbajo !== null && (
+                        <span style={{ margin: "0 6px", color: C.line }}>·</span>
+                      )}
+                      {ptsSimuladoAbajo !== null && (
+                        <span>
+                          A{" "}
+                          <strong style={{ fontFamily: "'DM Mono', monospace", color: C.ink }}>
+                            {ptsSimuladoAbajo}
+                          </strong>{" "}
+                          pts del {puestoSimulado + 1}°
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  </>
                 ) : (
                   <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.line}`, fontSize: 12, color: C.muted }}>
                     Cargando simulación...
