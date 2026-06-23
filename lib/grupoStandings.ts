@@ -5,6 +5,7 @@
  */
 
 import type { RealResults } from "@/lib/scoring";
+import { scoreMatch, GRUPO_PTS } from "@/lib/scoring";
 import horarios from "@/data/horarios_grupos.json";
 import teamsData from "@/data/teams.json";
 
@@ -156,37 +157,59 @@ export function scoreGrupoPositions(
   return { posiciones, clasificados, total: posiciones + clasificados, detalle };
 }
 
-// ---- Mejor/peor escenario con 1 partido pendiente ----
+// ---- Simulación del último partido jugado ----
 
-export function bestWorstScenario(
+export function simularUltimaJornada(
   grupo: string,
-  currentStats: TeamStat[],
-  pendientes: Fixture[],
+  real: RealResults,
   mejoresTerceros: MejoresTerceros,
   playerPositions: { puesto: string; equipo: string }[],
   playerClasifDieciseisavos: string[],
 ): {
-  mejor: { pts: number; standing: TeamStat[]; descripcion: string } | null;
-  peor:  { pts: number; standing: TeamStat[]; descripcion: string } | null;
-} {
-  if (pendientes.length !== 1) return { mejor: null, peor: null };
+  mejorAlternativo: { pts: number; standing: TeamStat[]; descripcion: string };
+  ptsActual: number;
+  partido: Fixture;
+  resultadoReal: { local: number; visitante: number };
+} | null {
+  const equipos = GRUPOS_DATA[grupo] ?? [];
+  const grupoFixtures = ALL_FIXTURES.filter(
+    f => equipos.includes(f.local) && equipos.includes(f.visitante)
+  );
 
-  const partido = pendientes[0];
-  const resultados = [
-    { local: 1, visitante: 0, desc: `gana ${partido.local}` },
+  const jugados = grupoFixtures
+    .filter(f => real[f.partido])
+    .sort((a, b) => new Date(b.kickoff).getTime() - new Date(a.kickoff).getTime());
+
+  if (jugados.length === 0) return null;
+
+  const ultimoPartido = jugados[0];
+  const resultadoReal = real[ultimoPartido.partido]!;
+
+  const standingSinUltimo = calcGrupoStandingSinPartido(grupo, real, ultimoPartido.partido);
+
+  const standingActual = calcGrupoStanding(grupo, real);
+  const ptsActual = scoreGrupoPositions(
+    grupo, standingActual.stats, mejoresTerceros, playerPositions, playerClasifDieciseisavos
+  ).total;
+
+  const candidatos = [
+    { local: 1, visitante: 0, desc: `gana ${ultimoPartido.local}` },
     { local: 0, visitante: 0, desc: `empate` },
-    { local: 0, visitante: 1, desc: `gana ${partido.visitante}` },
+    { local: 0, visitante: 1, desc: `gana ${ultimoPartido.visitante}` },
   ];
 
-  let mejor: { pts: number; standing: TeamStat[]; descripcion: string } | null = null;
-  let peor:  { pts: number; standing: TeamStat[]; descripcion: string } | null = null;
+  let mejorAlternativo: { pts: number; standing: TeamStat[]; descripcion: string } | null = null;
 
-  for (const res of resultados) {
+  for (const res of candidatos) {
+    const esReal =
+      Math.sign(res.local - res.visitante) === Math.sign(resultadoReal.local - resultadoReal.visitante);
+    if (esReal) continue;
+
     const simStats: Record<string, TeamStat> = {};
-    for (const s of currentStats) simStats[s.equipo] = { ...s };
+    for (const s of standingSinUltimo) simStats[s.equipo] = { ...s };
 
-    const loc = simStats[partido.local];
-    const vis = simStats[partido.visitante];
+    const loc = simStats[ultimoPartido.local];
+    const vis = simStats[ultimoPartido.visitante];
     if (!loc || !vis) continue;
 
     loc.pj++; vis.pj++;
@@ -204,10 +227,172 @@ export function bestWorstScenario(
     }
 
     const simStanding = sortStanding(Object.values(simStats));
-    const score = scoreGrupoPositions(grupo, simStanding, mejoresTerceros, playerPositions, playerClasifDieciseisavos);
+    const score = scoreGrupoPositions(
+      grupo, simStanding, mejoresTerceros, playerPositions, playerClasifDieciseisavos
+    );
 
-    if (!mejor || score.total > mejor.pts) mejor = { pts: score.total, standing: simStanding, descripcion: res.desc };
-    if (!peor  || score.total < peor.pts)  peor  = { pts: score.total, standing: simStanding, descripcion: res.desc };
+    if (!mejorAlternativo || score.total > mejorAlternativo.pts) {
+      mejorAlternativo = { pts: score.total, standing: simStanding, descripcion: res.desc };
+    }
+  }
+
+  if (!mejorAlternativo || mejorAlternativo.pts <= ptsActual) return null;
+
+  return { mejorAlternativo, ptsActual, partido: ultimoPartido, resultadoReal };
+}
+
+function calcGrupoStandingSinPartido(grupo: string, real: RealResults, excluirPartido: string): TeamStat[] {
+  const equipos = GRUPOS_DATA[grupo] ?? [];
+  const statsMap: Record<string, TeamStat> = {};
+  for (const eq of equipos) {
+    statsMap[eq] = { equipo: eq, grupo, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, dg: 0, pts: 0 };
+  }
+
+  const grupoFixtures = ALL_FIXTURES.filter(
+    f => equipos.includes(f.local) && equipos.includes(f.visitante)
+  );
+
+  for (const f of grupoFixtures) {
+    if (f.partido === excluirPartido) continue;
+    const r = real[f.partido];
+    if (!r) continue;
+
+    const loc = statsMap[f.local];
+    const vis = statsMap[f.visitante];
+    if (!loc || !vis) continue;
+
+    loc.pj++; vis.pj++;
+    loc.gf += r.local;  loc.gc += r.visitante;
+    vis.gf += r.visitante; vis.gc += r.local;
+    loc.dg = loc.gf - loc.gc;
+    vis.dg = vis.gf - vis.gc;
+
+    if (r.local > r.visitante) {
+      loc.pg++; loc.pts += 3; vis.pp++;
+    } else if (r.local < r.visitante) {
+      vis.pg++; vis.pts += 3; loc.pp++;
+    } else {
+      loc.pe++; loc.pts++; vis.pe++; vis.pts++;
+    }
+  }
+
+  return sortStanding(Object.values(statsMap));
+}
+
+// ---- Mejor/peor escenario con partidos pendientes ----
+
+type ResultadoSim = { local: number; visitante: number; desc: string };
+
+function aplicarResultado(stats: Record<string, TeamStat>, fixture: Fixture, res: ResultadoSim) {
+  const loc = stats[fixture.local];
+  const vis = stats[fixture.visitante];
+  if (!loc || !vis) return;
+
+  loc.pj++; vis.pj++;
+  loc.gf += res.local;  loc.gc += res.visitante;
+  vis.gf += res.visitante; vis.gc += res.local;
+  loc.dg = loc.gf - loc.gc;
+  vis.dg = vis.gf - vis.gc;
+
+  if (res.local > res.visitante) {
+    loc.pg++; loc.pts += 3; vis.pp++;
+  } else if (res.local < res.visitante) {
+    vis.pg++; vis.pts += 3; loc.pp++;
+  } else {
+    loc.pe++; loc.pts++; vis.pe++; vis.pts++;
+  }
+}
+
+export function bestWorstScenario(
+  grupo: string,
+  currentStats: TeamStat[],
+  pendientes: Fixture[],
+  mejoresTerceros: MejoresTerceros,
+  playerPositions: { puesto: string; equipo: string }[],
+  playerClasifDieciseisavos: string[],
+  playerMatches: { partido: string; pred: { local: number; visitante: number; signo: string } }[] = [],
+): {
+  mejor: { pts: number; standing: TeamStat[]; descripcion: string; desglose: string } | null;
+  peor:  { pts: number; standing: TeamStat[]; descripcion: string; desglose: string } | null;
+} {
+  if (pendientes.length === 0 || pendientes.length > 2) return { mejor: null, peor: null };
+
+  const opciones = (f: Fixture): ResultadoSim[] => [
+    { local: 1, visitante: 0, desc: `gana ${f.local}` },
+    { local: 0, visitante: 0, desc: `empate` },
+    { local: 0, visitante: 1, desc: `gana ${f.visitante}` },
+  ];
+
+  type Combo = { res1: ResultadoSim; res2?: ResultadoSim; descripcion: string };
+  const combos: Combo[] = [];
+
+  if (pendientes.length === 1) {
+    for (const r1 of opciones(pendientes[0])) {
+      combos.push({ res1: r1, descripcion: r1.desc });
+    }
+  } else {
+    for (const r1 of opciones(pendientes[0])) {
+      for (const r2 of opciones(pendientes[1])) {
+        combos.push({
+          res1: r1, res2: r2,
+          descripcion: `${r1.desc} + ${r2.desc}`,
+        });
+      }
+    }
+  }
+
+  let mejor: { pts: number; standing: TeamStat[]; descripcion: string; desglose: string } | null = null;
+  let peor:  { pts: number; standing: TeamStat[]; descripcion: string; desglose: string } | null = null;
+
+  for (const combo of combos) {
+    const simStats: Record<string, TeamStat> = {};
+    for (const s of currentStats) simStats[s.equipo] = { ...s };
+
+    aplicarResultado(simStats, pendientes[0], combo.res1);
+    if (combo.res2) aplicarResultado(simStats, pendientes[1], combo.res2);
+
+    const simStanding = sortStanding(Object.values(simStats));
+    const scorePosiciones = scoreGrupoPositions(grupo, simStanding, mejoresTerceros, playerPositions, playerClasifDieciseisavos);
+
+    let ptsPartidos = 0;
+    const resPartidos: { local: number; visitante: number }[] = [
+      { local: combo.res1.local, visitante: combo.res1.visitante },
+      ...(combo.res2 ? [{ local: combo.res2.local, visitante: combo.res2.visitante }] : []),
+    ];
+
+    pendientes.forEach((f, idx) => {
+      const pred = playerMatches.find(m => m.partido === f.partido);
+      if (pred) {
+        const pLoc = pred.pred.local;
+        const pVis = pred.pred.visitante;
+        const rLoc = resPartidos[idx].local;
+        const rVis = resPartidos[idx].visitante;
+
+        const pSigno = Math.sign(pLoc - pVis);
+        const rSigno = Math.sign(rLoc - rVis);
+
+        if (pLoc === rLoc && pVis === rVis) {
+          ptsPartidos += 3; 
+        } else if (pSigno === rSigno) {
+          const pDiff = pLoc - pVis;
+          const rDiff = rLoc - rVis;
+          
+          if (Math.abs(pDiff - rDiff) === 1) {
+            ptsPartidos += 3; 
+          } else {
+            ptsPartidos += 2; 
+          }
+        }
+      }
+    });
+
+    const totalCombo = scorePosiciones.total + ptsPartidos;
+    const desglose = ptsPartidos > 0
+      ? `${scorePosiciones.total} por tabla + ${ptsPartidos} por partido${ptsPartidos !== 1 ? "s" : ""}`
+      : `${scorePosiciones.total} pts posiciones`;
+
+    if (!mejor || totalCombo > mejor.pts) mejor = { pts: totalCombo, standing: simStanding, descripcion: combo.descripcion, desglose };
+    if (!peor  || totalCombo < peor.pts)  peor  = { pts: totalCombo, standing: simStanding, descripcion: combo.descripcion, desglose };
   }
 
   return { mejor, peor };
