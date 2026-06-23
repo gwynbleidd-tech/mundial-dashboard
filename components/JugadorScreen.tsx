@@ -192,13 +192,21 @@ function GroupView({
     (m) => equipoGrupo[m.local] === grupo && equipoGrupo[m.visitante] === grupo
   );
 
-  const simUltima = useMemo(() => simularUltimaJornada(
-    grupo,
-    real,
-    mejoresTerceros,
-    player.posicion_grupos,
-    player.clasif_dieciseisavos,
-  ), [grupo, real, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos]);
+  const simUltima = useMemo(() => {
+    // Saneamos explícitamente las posiciones del jugador para el tipado estricto
+    const cleanPositions = player.posicion_grupos.map(p => ({
+      puesto: p.puesto,
+      equipo: p.equipo
+    }));
+
+    return simularUltimaJornada(
+      grupo,
+      real as any,
+      mejoresTerceros as any,
+      cleanPositions,
+      player.clasif_dieciseisavos,
+    );
+  }, [grupo, real, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos]);
 
   // Ejecutamos una simulación local sobre bestWorstScenario para buscar un escenario real intermedio
   const { mejor, peor, escenarioIntermedio } = useMemo(() => {
@@ -220,7 +228,6 @@ function GroupView({
       return { ...baseScenarios, escenarioIntermedio: null };
     }
 
-    // Usamos el tipo exacto inferido del array original del estado para evitar desajustes de tipado
     type TeamStatType = typeof standing.stats[0];
 
     const obtenerOpciones = (f: typeof standing.pendientes[0]) => [
@@ -454,7 +461,7 @@ function GroupView({
           </div>
           <div style={{ fontSize: 12, color: C.ink, lineHeight: "1.4" }}>
             Si en{" "}
-            <strong>{simUltima.partido.local} – {simUltima.partido.visitante}</strong>
+            <strong>{(simUltima.partido as any).local} – {(simUltima.partido as any).visitante}</strong>
             {" "}hubiera habido{" "}
             <strong style={{ color: "#B87333" }}>{simUltima.mejorAlternativo.descripcion}</strong>
             {" "}en vez de{" "}
@@ -486,7 +493,6 @@ function GroupView({
           marginBottom: 16, padding: "14px",
           background: C.chalk, borderRadius: 8, border: `1px solid ${C.line}`
         }}>
-          {/* Título unificado */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, borderBottom: `1px solid ${C.line}`, paddingBottom: 6, marginBottom: 12 }}>
             <span style={{ fontSize: 15 }}>💡</span>
             <span style={{ ...secLabel, fontSize: 12, color: C.ink }}>
@@ -654,7 +660,7 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
     return acc + scorePos.total;
   }, 0);
 
-  const { puestoActual, puestoSimulado, ptsSimuladoActual, ptsSimuladoArriba, ptsSimuladoAbajo } = useMemo(() => {
+  const { puestoActual, puestoSimulado, ptsSimuladoArriba, ptsSimuladoAbajo } = useMemo(() => {
     if (!rankingBaseOficial || rankingBaseOficial.length === 0) {
       return { puestoActual: 0, puestoSimulado: 0, ptsSimuladoActual: 0, ptsSimuladoArriba: null, ptsSimuladoAbajo: null };
     }
