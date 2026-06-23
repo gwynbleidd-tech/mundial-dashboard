@@ -347,7 +347,8 @@ function GroupView({
       }
 
       if (mejorIntermedio.pts === baseScenarios.mejor.pts || mejorIntermedio.pts === baseScenarios.peor.pts) {
-        const alternativa = todasLasSims.find(s => s.pts !== baseScenarios.mejor.pts);
+        // CORRECCIÓN AQUÍ: Se añade el signo '!' tras baseScenarios.mejor para que TypeScript no avise de un posible 'null'
+        const alternativa = todasLasSims.find(s => s.pts !== baseScenarios.mejor!.pts);
         if (alternativa) mejorIntermedio = alternativa;
       }
     }

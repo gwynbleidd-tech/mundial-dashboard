@@ -111,9 +111,9 @@ export function calcMejoresTerceros(real: RealResults): MejoresTerceros {
   return {
     terceros: sorted,
     clasifican: sorted.slice(0, 8),
-    complete: gruposCompletos === 12, // Mantenemos la propiedad esperada por tus componentes
+    complete: gruposCompletos === 12, // Mantenemos compatibilidad con tus componentes anteriores
     completo: gruposCompletos === 12,
-  };
+  } as MejoresTerceros & { complete: boolean };
 }
 
 // ---- Puntos de posición y clasificación para un jugador ----
@@ -213,7 +213,8 @@ export function bestWorstScenario(
     for (const r1 of opciones(pendientes[0])) {
       for (const r2 of opciones(pendientes[1])) {
         combos.push({
-          res1: r1, res2: r2,
+          res1: r1,
+          res2: r2,
           descripcion: `${r1.desc} + ${r2.desc}`,
         });
       }
@@ -227,7 +228,7 @@ export function bestWorstScenario(
     const simStats: Record<string, TeamStat> = {};
     for (const s of currentStats) simStats[s.equipo] = { ...s };
 
-     aplicarResultado(simStats, pendientes[0], combo.res1);
+    aplicarResultado(simStats, pendientes[0], combo.res1);
     if (combo.res2) aplicarResultado(simStats, pendientes[1], combo.res2);
 
     const simStanding = sortStanding(Object.values(simStats));
