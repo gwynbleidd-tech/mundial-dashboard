@@ -220,13 +220,10 @@ function GroupView({
       return { ...baseScenarios, escenarioIntermedio: null };
     }
 
-    interface SimOption {
-      local: number;
-      visitante: number;
-      desc: string;
-    }
+    // Usamos el tipo exacto inferido del array original del estado para evitar desajustes de tipado
+    type TeamStatType = typeof standing.stats[0];
 
-    const obtenerOpciones = (f: { local: string; visitante: string }): SimOption[] => [
+    const obtenerOpciones = (f: typeof standing.pendientes[0]) => [
       { local: 1, visitante: 0, desc: `gana ${f.local}` },
       { local: 0, visitante: 0, desc: `empate` },
       { local: 0, visitante: 1, desc: `gana ${f.visitante}` },
@@ -234,7 +231,7 @@ function GroupView({
 
     interface EscenarioSimulado {
       pts: number;
-      standing: typeof standing.stats;
+      standing: TeamStatType[];
       descripcion: string;
       desglose: string;
     }
@@ -243,7 +240,7 @@ function GroupView({
 
     if (standing.pendientes.length === 1) {
       for (const r1 of obtenerOpciones(standing.pendientes[0])) {
-        const simStats: Record<string, typeof standing.stats[0]> = {};
+        const simStats: Record<string, TeamStatType> = {};
         for (const s of standing.stats) simStats[s.equipo] = { ...s };
         
         const loc = simStats[standing.pendientes[0].local];
@@ -252,14 +249,14 @@ function GroupView({
           loc.pts += r1.local > r1.visitante ? 3 : r1.local === r1.visitante ? 1 : 0;
           vis.pts += r1.visitante > r1.local ? 3 : r1.local === r1.visitante ? 1 : 0;
         }
-        const simStanding = [...Object.values(simStats)].sort((a,b) => b.pts - a.pts);
+        const simStanding = Object.values(simStats).sort((a,b) => b.pts - a.pts);
         const sPos = scoreGrupoPositions(grupo, simStanding, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos);
         todasLasSims.push({ pts: sPos.total, standing: simStanding, descripcion: r1.desc, desglose: `${sPos.total} por tabla` });
       }
     } else if (standing.pendientes.length === 2) {
       for (const r1 of obtenerOpciones(standing.pendientes[0])) {
         for (const r2 of obtenerOpciones(standing.pendientes[1])) {
-          const simStats: Record<string, typeof standing.stats[0]> = {};
+          const simStats: Record<string, TeamStatType> = {};
           for (const s of standing.stats) simStats[s.equipo] = { ...s };
           
           const loc1 = simStats[standing.pendientes[0].local]; 
@@ -274,9 +271,9 @@ function GroupView({
             loc2.pts += r2.local > r2.visitante ? 3 : r2.local === r2.visitante ? 1 : 0;
             vis2.pts += r2.visitante > r2.local ? 3 : r2.local === r2.visitante ? 1 : 0;
           }
-          const simStanding = [...Object.values(simStats)].sort((a,b) => b.pts - a.pts);
+          const simStanding = Object.values(simStats).sort((a,b) => b.pts - a.pts);
           const sPos = scoreGrupoPositions(grupo, simStanding, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos);
-          todasLasSims.push({ pts: sPos.total, standing: simStanding, descripcion: `${r1.desc} + ${r2.desc}`, desglose: `${sPos.total} por tabla` });
+          todasLasSims.push({ pts: sPos.total, standing: simStanding, descripcion: `${r1.desc} y ${r2.desc}`, desglose: `${sPos.total} por tabla` });
         }
       }
     }
