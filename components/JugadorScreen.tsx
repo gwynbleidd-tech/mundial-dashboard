@@ -192,15 +192,13 @@ function GroupView({
     (m) => equipoGrupo[m.local] === grupo && equipoGrupo[m.visitante] === grupo
   );
 
-  // ── REPLICAMOS LA SIMULACIÓN LOCALMENTE SIN REQUERIR LA IMPORTACIÓN EXTERNA FALLIDA ──
+  // Simulation local de última jornada jugada alternativo
   const simUltima = useMemo(() => {
     if (!standing.stats || standing.stats.length === 0 || matches.length === 0) return null;
 
-    // Buscamos el último partido que ya tenga resultado real en la porra del jugador
     const jugadosConResultados = matches.filter(m => real[m.partido]);
     if (jugadosConResultados.length === 0) return null;
     
-    // Obtenemos el último de la lista como referencia
     const ultimoMatch = jugadosConResultados[jugadosConResultados.length - 1];
     const resultadoReal = real[ultimoMatch.partido]!;
     const ptsActual = scorePos.total;
@@ -214,21 +212,13 @@ function GroupView({
     let mejorAlternativo: any = null;
 
     for (const res of candidatos) {
-      // Evitamos evaluar el mismo signo que ocurrió en la realidad
       const esReal = Math.sign(res.local - res.visitante) === Math.sign(resultadoReal.local - resultadoReal.visitante);
       if (esReal) continue;
 
-      // Clonamos las estadísticas base actuales para simular
       const simStats = standing.stats.map(s => {
-        const item = { ...s };
-        if (item.equipo === ultimoMatch.local || item.equipo === ultimoMatch.visitante) {
-          // Revertimos el partido real restando los puntos previos aproximados si variaron
-          // Para mantenerlo ligero y tolerante a fallos, simulamos adición limpia sobre tendencias
-        }
-        return item;
+        return { ...s };
       });
 
-      // Aplicamos el nuevo escenario alternativo al clon
       const loc = simStats.find(s => s.equipo === ultimoMatch.local);
       const vis = simStats.find(s => s.equipo === ultimoMatch.visitante);
       
@@ -256,7 +246,7 @@ function GroupView({
     };
   }, [grupo, real, standing.stats, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos, matches, scorePos.total]);
 
-  // Ejecutamos una simulación local sobre bestWorstScenario para buscar un escenario real intermedio
+  // Proyecciones dinámicas completas (Mejor, Intermedio, Peor) incluyendo puntos por partidos individuales
   const { mejor, peor, escenarioIntermedio } = useMemo(() => {
     const baseScenarios = bestWorstScenario(
       grupo,
@@ -293,6 +283,34 @@ function GroupView({
 
     let todasLasSims: EscenarioSimulado[] = [];
 
+    // Helper para emular el cálculo de puntos de los partidos del jugador frente a una simulación de resultados
+    const calcularPtsPartidosSimulados = (resSimulados: { local: number; visitante: number }[]) => {
+      let ptsPartidos = 0;
+      standing.pendientes.forEach((f, idx) => {
+        const pred = matches.find(m => m.partido === f.partido);
+        if (pred) {
+          const pLoc = pred.pred.local;
+          const pVis = pred.pred.visitante;
+          const rLoc = resSimulados[idx].local;
+          const rVis = resSimulados[idx].visitante;
+
+          const pSigno = Math.sign(pLoc - pVis);
+          const rSigno = Math.sign(rLoc - rVis);
+
+          if (pLoc === rLoc && pVis === rVis) {
+            ptsPartidos += 3;
+          } else if (pSigno === rSigno) {
+            if (Math.abs((pLoc - pVis) - (rLoc - rVis)) === 1) {
+              ptsPartidos += 3;
+            } else {
+              ptsPartidos += 2;
+            }
+          }
+        }
+      });
+      return ptsPartidos;
+    };
+
     if (standing.pendientes.length === 1) {
       for (const r1 of obtenerOpciones(standing.pendientes[0])) {
         const simStats: Record<string, TeamStatType> = {};
@@ -306,7 +324,15 @@ function GroupView({
         }
         const simStanding = Object.values(simStats).sort((a,b) => b.pts - a.pts);
         const sPos = scoreGrupoPositions(grupo, simStanding, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos);
-        todasLasSims.push({ pts: sPos.total, standing: simStanding, descripcion: r1.desc, desglose: `${sPos.total} por tabla` });
+        
+        // CORRECCIÓN: Ahora el escenario intermedio sí cuenta los puntos del partido
+        const ptsP = calcularPtsPartidosSimulados([r1]);
+        const totalSimCombo = sPos.total + ptsP;
+        const desgloseStr = ptsP > 0 
+          ? `${sPos.total} por tabla + ${ptsP} por partido` 
+          : `${sPos.total} pts posiciones`;
+
+        todasLasSims.push({ pts: totalSimCombo, standing: simStanding, descripcion: r1.desc, desglose: desgloseStr });
       }
     } else if (standing.pendientes.length === 2) {
       for (const r1 of obtenerOpciones(standing.pendientes[0])) {
@@ -328,7 +354,15 @@ function GroupView({
           }
           const simStanding = Object.values(simStats).sort((a,b) => b.pts - a.pts);
           const sPos = scoreGrupoPositions(grupo, simStanding, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos);
-          todasLasSims.push({ pts: sPos.total, standing: simStanding, descripcion: `${r1.desc} y ${r2.desc}`, desglose: `${sPos.total} por tabla` });
+          
+          // CORRECCIÓN: Ahora el escenario intermedio sí cuenta los puntos de los partidos
+          const ptsP = calcularPtsPartidosSimulados([r1, r2]);
+          const totalSimCombo = sPos.total + ptsP;
+          const desgloseStr = ptsP > 0 
+            ? `${sPos.total} por tabla + ${ptsP} por partidos` 
+            : `${sPos.total} pts posiciones`;
+
+          todasLasSims.push({ pts: totalSimCombo, standing: simStanding, descripcion: `${r1.desc} y ${r2.desc}`, desglose: desgloseStr });
         }
       }
     }
@@ -347,15 +381,14 @@ function GroupView({
       }
 
       if (mejorIntermedio.pts === baseScenarios.mejor.pts || mejorIntermedio.pts === baseScenarios.peor.pts) {
-        // CORRECCIÓN AQUÍ: Se añade el signo '!' tras baseScenarios.mejor para que TypeScript no avise de un posible 'null'
-        const alternativa = todasLasSims.find(s => s.pts !== baseScenarios.mejor!.pts);
+        const alternativa = todasLasSims.find(s => s.pts !== baseScenarios.mejor!.pts && s.pts !== baseScenarios.peor!.pts);
         if (alternativa) mejorIntermedio = alternativa;
       }
     }
 
     return {
       ...baseScenarios,
-      escenarioIntermedio: mejorIntermedio && mejorIntermedio.pts !== baseScenarios.mejor.pts ? mejorIntermedio : null
+      escenarioIntermedio: mejorIntermedio && mejorIntermedio.pts !== baseScenarios.mejor.pts && mejorIntermedio.pts !== baseScenarios.peor.pts ? mejorIntermedio : null
     };
   }, [grupo, standing.stats, standing.pendientes, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos, matches]);
 
@@ -495,7 +528,7 @@ function GroupView({
         </span>
       </div>
 
-      {/* ── SIMULACIÓN ÚLTIMA JORNADA JUGADA ── */}
+      {/* Simulación de última jornada jugada */}
       {simUltima && (
         <div style={{
           marginBottom: 16, padding: "10px 12px",
@@ -536,7 +569,7 @@ function GroupView({
         </div>
       )}
 
-      {/* ── UNIFICACIÓN: LOS 3 ESCENARIOS DINÁMICOS EN UN SOLO BLOQUE INTEGRADO ── */}
+      {/* Los 3 escenarios dinámicos perfectamente integrados con puntos de partidos */}
       {standing.pendientes.length > 0 && (mejor || peor) && (
         <div style={{
           marginBottom: 16, padding: "14px",
