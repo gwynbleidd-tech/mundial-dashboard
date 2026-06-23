@@ -202,7 +202,6 @@ function GroupView({
 
   // Ejecutamos una simulación local sobre bestWorstScenario para buscar un escenario real intermedio
   const { mejor, peor, escenarioIntermedio } = useMemo(() => {
-    // Reutilizamos la lógica interna de combinaciones para encontrar el caso medio real
     const baseScenarios = bestWorstScenario(
       grupo,
       standing.stats,
@@ -217,27 +216,36 @@ function GroupView({
       return { ...baseScenarios, escenarioIntermedio: null };
     }
 
-    // Si el mejor y el peor puntaje son iguales, no hay escenario intermedio útil
     if (baseScenarios.mejor.pts === baseScenarios.peor.pts) {
       return { ...baseScenarios, escenarioIntermedio: null };
     }
 
-    // Buscamos todas las combinaciones reales posibles para este grupo en específico
-    type ResultadoSim = { local: number; visitante: number; desc: string };
-    const opciones = (f: any): ResultadoSim[] => [
+    interface SimOption {
+      local: number;
+      visitante: number;
+      desc: string;
+    }
+
+    const obtenerOpciones = (f: { local: string; visitante: string }): SimOption[] => [
       { local: 1, visitante: 0, desc: `gana ${f.local}` },
       { local: 0, visitante: 0, desc: `empate` },
       { local: 0, visitante: 1, desc: `gana ${f.visitante}` },
     ];
 
-    let todasLasSims: { pts: number; standing: any[]; descripcion: string; desglose: string }[] = [];
+    interface EscenarioSimulado {
+      pts: number;
+      standing: typeof standing.stats;
+      descripcion: string;
+      desglose: string;
+    }
+
+    let todasLasSims: EscenarioSimulado[] = [];
 
     if (standing.pendientes.length === 1) {
-      for (const r1 of opciones(standing.pendientes[0])) {
-        const simStats: Record<string, any> = {};
+      for (const r1 of obtenerOpciones(standing.pendientes[0])) {
+        const simStats: Record<string, typeof standing.stats[0]> = {};
         for (const s of standing.stats) simStats[s.equipo] = { ...s };
         
-        // Aplicar simulación rápida
         const loc = simStats[standing.pendientes[0].local];
         const vis = simStats[standing.pendientes[0].visitante];
         if (loc && vis) {
@@ -249,17 +257,19 @@ function GroupView({
         todasLasSims.push({ pts: sPos.total, standing: simStanding, descripcion: r1.desc, desglose: `${sPos.total} por tabla` });
       }
     } else if (standing.pendientes.length === 2) {
-      for (const r1 of opciones(standing.pendientes[0])) {
-        for (const r2 of opciones(standing.pendientes[1])) {
-          const simStats: Record<string, any> = {};
+      for (const r1 of obtenerOpciones(standing.pendientes[0])) {
+        for (const r2 of obtenerOpciones(standing.pendientes[1])) {
+          const simStats: Record<string, typeof standing.stats[0]> = {};
           for (const s of standing.stats) simStats[s.equipo] = { ...s };
           
-          const loc1 = simStats[standing.pendientes[0].local]; const vis1 = simStats[standing.pendientes[0].visitante];
+          const loc1 = simStats[standing.pendientes[0].local]; 
+          const vis1 = simStats[standing.pendientes[0].visitante];
           if (loc1 && vis1) {
             loc1.pts += r1.local > r1.visitante ? 3 : r1.local === r1.visitante ? 1 : 0;
             vis1.pts += r1.visitante > r1.local ? 3 : r1.local === r1.visitante ? 1 : 0;
           }
-          const loc2 = simStats[standing.pendientes[1].local]; const vis2 = simStats[standing.pendientes[1].visitante];
+          const loc2 = simStats[standing.pendientes[1].local]; 
+          const vis2 = simStats[standing.pendientes[1].visitante];
           if (loc2 && vis2) {
             loc2.pts += r2.local > r2.visitante ? 3 : r2.local === r2.visitante ? 1 : 0;
             vis2.pts += r2.visitante > r2.local ? 3 : r2.local === r2.visitante ? 1 : 0;
@@ -271,24 +281,23 @@ function GroupView({
       }
     }
 
-    // Buscamos el escenario cuyo puntaje esté más cerca de la mitad matemática exacta
     const targetPts = (baseScenarios.mejor.pts + baseScenarios.peor.pts) / 2;
     let mejorIntermedio = todasLasSims[0];
-    let menorDiff = Math.abs(mejorIntermedio.pts - targetPts);
-
-    for (const sim of todasLasSims) {
-      const diff = Math.abs(sim.pts - targetPts);
-      // Evitamos duplicar exactamente el mejor o el peor si existen alternativas intermedias puras
-      if (diff < menorDiff && sim.pts > baseScenarios.peor.pts && sim.pts < baseScenarios.mejor.pts) {
-        menorDiff = diff;
-        mejorIntermedio = sim;
+    
+    if (mejorIntermedio) {
+      let menorDiff = Math.abs(mejorIntermedio.pts - targetPts);
+      for (const sim of todasLasSims) {
+        const diff = Math.abs(sim.pts - targetPts);
+        if (diff < menorDiff && sim.pts > baseScenarios.peor.pts && sim.pts < baseScenarios.mejor.pts) {
+          menorDiff = diff;
+          mejorIntermedio = sim;
+        }
       }
-    }
 
-    // Si no encontró un caso estrictamente intermedio en puntos, usamos cualquiera que no sea el absoluto mejor/peor
-    if (mejorIntermedio.pts === baseScenarios.mejor.pts || mejorIntermedio.pts === baseScenarios.peor.pts) {
-      const alternativa = todasLasSims.find(s => s.pts !== baseScenarios.mejor.pts);
-      if (alternativa) mejorIntermedio = alternativa;
+      if (mejorIntermedio.pts === baseScenarios.mejor.pts || mejorIntermedio.pts === baseScenarios.peor.pts) {
+        const alternativa = todasLasSims.find(s => s.pts !== baseScenarios.mejor.pts);
+        if (alternativa) mejorIntermedio = alternativa;
+      }
     }
 
     return {
@@ -814,7 +823,7 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
                 background: C.chalk, borderRadius: 8,
                 borderLeft: `4px solid ${C.ink}`
               }}>
-                <div style={{ display: "flex", justifycontent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: 12, fontWeight: 700, color: C.ink, letterSpacing: ".02em", textTransform: "uppercase" }}>
                     Total posiciones grupos (A-L)
                   </span>
