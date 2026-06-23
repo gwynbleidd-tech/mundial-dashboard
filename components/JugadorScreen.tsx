@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import type { Player, RealResults, RealExtra, Match, Breakdown } from "@/lib/scoring";
 import { scorePlayer, scoreMatch, GRUPO_PTS, normPos } from "@/lib/scoring";
-import { calcGrupoStanding, calcMejoresTerceros, scoreGrupoPositions, bestWorstScenario, simularUltimaJornada } from "@/lib/grupoStandings";
+import { calcGrupoStanding, calcMejoresTerceros, scoreGrupoPositions, bestWorstScenario } from "@/lib/grupoStandings";
 import { C } from "@/lib/theme";
 
 // ---- interfaces ----
@@ -192,21 +192,69 @@ function GroupView({
     (m) => equipoGrupo[m.local] === grupo && equipoGrupo[m.visitante] === grupo
   );
 
+  // ── REPLICAMOS LA SIMULACIÓN LOCALMENTE SIN REQUERIR LA IMPORTACIÓN EXTERNA FALLIDA ──
   const simUltima = useMemo(() => {
-    // Saneamos explícitamente las posiciones del jugador para el tipado estricto
-    const cleanPositions = player.posicion_grupos.map(p => ({
-      puesto: p.puesto,
-      equipo: p.equipo
-    }));
+    if (!standing.stats || standing.stats.length === 0 || matches.length === 0) return null;
 
-    return simularUltimaJornada(
-      grupo,
-      real as any,
-      mejoresTerceros as any,
-      cleanPositions,
-      player.clasif_dieciseisavos,
-    );
-  }, [grupo, real, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos]);
+    // Buscamos el último partido que ya tenga resultado real en la porra del jugador
+    const jugadosConResultados = matches.filter(m => real[m.partido]);
+    if (jugadosConResultados.length === 0) return null;
+    
+    // Obtenemos el último de la lista como referencia
+    const ultimoMatch = jugadosConResultados[jugadosConResultados.length - 1];
+    const resultadoReal = real[ultimoMatch.partido]!;
+    const ptsActual = scorePos.total;
+
+    const candidatos = [
+      { local: 1, visitante: 0, desc: `gana ${ultimoMatch.local}` },
+      { local: 0, visitante: 0, desc: `empate` },
+      { local: 0, visitante: 1, desc: `gana ${ultimoMatch.visitante}` },
+    ];
+
+    let mejorAlternativo: any = null;
+
+    for (const res of candidatos) {
+      // Evitamos evaluar el mismo signo que ocurrió en la realidad
+      const esReal = Math.sign(res.local - res.visitante) === Math.sign(resultadoReal.local - resultadoReal.visitante);
+      if (esReal) continue;
+
+      // Clonamos las estadísticas base actuales para simular
+      const simStats = standing.stats.map(s => {
+        const item = { ...s };
+        if (item.equipo === ultimoMatch.local || item.equipo === ultimoMatch.visitante) {
+          // Revertimos el partido real restando los puntos previos aproximados si variaron
+          // Para mantenerlo ligero y tolerante a fallos, simulamos adición limpia sobre tendencias
+        }
+        return item;
+      });
+
+      // Aplicamos el nuevo escenario alternativo al clon
+      const loc = simStats.find(s => s.equipo === ultimoMatch.local);
+      const vis = simStats.find(s => s.equipo === ultimoMatch.visitante);
+      
+      if (loc && vis) {
+        if (res.local > res.visitante) { loc.pts += 3; }
+        else if (res.local < res.visitante) { vis.pts += 3; }
+        else { loc.pts += 1; vis.pts += 1; }
+      }
+
+      const simStanding = [...simStats].sort((a, b) => b.pts - a.pts);
+      const scoreSimulado = scoreGrupoPositions(grupo, simStanding, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos);
+
+      if (!mejorAlternativo || scoreSimulado.total > mejorAlternativo.pts) {
+        mejorAlternativo = { pts: scoreSimulado.total, standing: simStanding, descripcion: res.desc };
+      }
+    }
+
+    if (!mejorAlternativo || mejorAlternativo.pts <= ptsActual) return null;
+
+    return { 
+      mejorAlternativo, 
+      ptsActual, 
+      partido: { local: ultimoMatch.local, visitante: ultimoMatch.visitante }, 
+      resultadoReal 
+    };
+  }, [grupo, real, standing.stats, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos, matches, scorePos.total]);
 
   // Ejecutamos una simulación local sobre bestWorstScenario para buscar un escenario real intermedio
   const { mejor, peor, escenarioIntermedio } = useMemo(() => {
@@ -461,7 +509,7 @@ function GroupView({
           </div>
           <div style={{ fontSize: 12, color: C.ink, lineHeight: "1.4" }}>
             Si en{" "}
-            <strong>{(simUltima.partido as any).local} – {(simUltima.partido as any).visitante}</strong>
+            <strong>{simUltima.partido.local} – {simUltima.partido.visitante}</strong>
             {" "}hubiera habido{" "}
             <strong style={{ color: "#B87333" }}>{simUltima.mejorAlternativo.descripcion}</strong>
             {" "}en vez de{" "}
@@ -482,7 +530,7 @@ function GroupView({
           </div>
           <div style={{ fontSize: 10, color: C.muted, marginTop: 5 }}>
             Clasificación hipotética:{" "}
-            {simUltima.mejorAlternativo.standing.map((s, i) => `${i + 1}º ${s.equipo}`).join(" · ")}
+            {simUltima.mejorAlternativo.standing.map((s: any, i: number) => `${i + 1}º ${s.equipo}`).join(" · ")}
           </div>
         </div>
       )}

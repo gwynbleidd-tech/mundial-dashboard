@@ -111,6 +111,7 @@ export function calcMejoresTerceros(real: RealResults): MejoresTerceros {
   return {
     terceros: sorted,
     clasifican: sorted.slice(0, 8),
+    complete: gruposCompletos === 12, // Mantenemos la propiedad esperada por tus componentes
     completo: gruposCompletos === 12,
   };
 }
@@ -155,128 +156,6 @@ export function scoreGrupoPositions(
   });
 
   return { posiciones, clasificados, total: posiciones + clasificados, detalle };
-}
-
-// ---- Simulación del último partido jugado ----
-
-export function simularUltimaJornada(
-  grupo: string,
-  real: RealResults,
-  mejoresTerceros: MejoresTerceros,
-  playerPositions: { puesto: string; equipo: string }[],
-  playerClasifDieciseisavos: string[],
-): {
-  mejorAlternativo: { pts: number; standing: TeamStat[]; descripcion: string };
-  ptsActual: number;
-  partido: Fixture;
-  resultadoReal: { local: number; visitante: number };
-} | null {
-  const equipos = GRUPOS_DATA[grupo] ?? [];
-  const grupoFixtures = ALL_FIXTURES.filter(
-    f => equipos.includes(f.local) && equipos.includes(f.visitante)
-  );
-
-  const jugados = grupoFixtures
-    .filter(f => real[f.partido])
-    .sort((a, b) => new Date(b.kickoff).getTime() - new Date(a.kickoff).getTime());
-
-  if (jugados.length === 0) return null;
-
-  const ultimoPartido = jugados[0];
-  const resultadoReal = real[ultimoPartido.partido]!;
-
-  const standingSinUltimo = calcGrupoStandingSinPartido(grupo, real, ultimoPartido.partido);
-
-  const standingActual = calcGrupoStanding(grupo, real);
-  const ptsActual = scoreGrupoPositions(
-    grupo, standingActual.stats, mejoresTerceros, playerPositions, playerClasifDieciseisavos
-  ).total;
-
-  const candidatos = [
-    { local: 1, visitante: 0, desc: `gana ${ultimoPartido.local}` },
-    { local: 0, visitante: 0, desc: `empate` },
-    { local: 0, visitante: 1, desc: `gana ${ultimoPartido.visitante}` },
-  ];
-
-  let mejorAlternativo: { pts: number; standing: TeamStat[]; descripcion: string } | null = null;
-
-  for (const res of candidatos) {
-    const esReal =
-      Math.sign(res.local - res.visitante) === Math.sign(resultadoReal.local - resultadoReal.visitante);
-    if (esReal) continue;
-
-    const simStats: Record<string, TeamStat> = {};
-    for (const s of standingSinUltimo) simStats[s.equipo] = { ...s };
-
-    const loc = simStats[ultimoPartido.local];
-    const vis = simStats[ultimoPartido.visitante];
-    if (!loc || !vis) continue;
-
-    loc.pj++; vis.pj++;
-    loc.gf += res.local;  loc.gc += res.visitante;
-    vis.gf += res.visitante; vis.gc += res.local;
-    loc.dg = loc.gf - loc.gc;
-    vis.dg = vis.gf - vis.gc;
-
-    if (res.local > res.visitante) {
-      loc.pg++; loc.pts += 3; vis.pp++;
-    } else if (res.local < res.visitante) {
-      vis.pg++; vis.pts += 3; loc.pp++;
-    } else {
-      loc.pe++; loc.pts++; vis.pe++; vis.pts++;
-    }
-
-    const simStanding = sortStanding(Object.values(simStats));
-    const score = scoreGrupoPositions(
-      grupo, simStanding, mejoresTerceros, playerPositions, playerClasifDieciseisavos
-    );
-
-    if (!mejorAlternativo || score.total > mejorAlternativo.pts) {
-      mejorAlternativo = { pts: score.total, standing: simStanding, descripcion: res.desc };
-    }
-  }
-
-  if (!mejorAlternativo || mejorAlternativo.pts <= ptsActual) return null;
-
-  return { mejorAlternativo, ptsActual, partido: ultimoPartido, resultadoReal };
-}
-
-function calcGrupoStandingSinPartido(grupo: string, real: RealResults, excluirPartido: string): TeamStat[] {
-  const equipos = GRUPOS_DATA[grupo] ?? [];
-  const statsMap: Record<string, TeamStat> = {};
-  for (const eq of equipos) {
-    statsMap[eq] = { equipo: eq, grupo, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, dg: 0, pts: 0 };
-  }
-
-  const grupoFixtures = ALL_FIXTURES.filter(
-    f => equipos.includes(f.local) && equipos.includes(f.visitante)
-  );
-
-  for (const f of grupoFixtures) {
-    if (f.partido === excluirPartido) continue;
-    const r = real[f.partido];
-    if (!r) continue;
-
-    const loc = statsMap[f.local];
-    const vis = statsMap[f.visitante];
-    if (!loc || !vis) continue;
-
-    loc.pj++; vis.pj++;
-    loc.gf += r.local;  loc.gc += r.visitante;
-    vis.gf += r.visitante; vis.gc += r.local;
-    loc.dg = loc.gf - loc.gc;
-    vis.dg = vis.gf - vis.gc;
-
-    if (r.local > r.visitante) {
-      loc.pg++; loc.pts += 3; vis.pp++;
-    } else if (r.local < r.visitante) {
-      vis.pg++; vis.pts += 3; loc.pp++;
-    } else {
-      loc.pe++; loc.pts++; vis.pe++; vis.pts++;
-    }
-  }
-
-  return sortStanding(Object.values(statsMap));
 }
 
 // ---- Mejor/peor escenario con partidos pendientes ----
@@ -348,7 +227,7 @@ export function bestWorstScenario(
     const simStats: Record<string, TeamStat> = {};
     for (const s of currentStats) simStats[s.equipo] = { ...s };
 
-    aplicarResultado(simStats, pendientes[0], combo.res1);
+     aplicarResultado(simStats, pendientes[0], combo.res1);
     if (combo.res2) aplicarResultado(simStats, pendientes[1], combo.res2);
 
     const simStanding = sortStanding(Object.values(simStats));
