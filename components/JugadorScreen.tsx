@@ -33,7 +33,7 @@ const KO_RONDAS = [
   { key: "semis",         label: "Semifinales",       short: "Semis" },
   { key: "3y4",           label: "3er y 4º puesto",  short: "3º y 4º" },
   { key: "final",         label: "Final",             short: "Final" },
-] as const;
+ ] as const;
 
 const HIT_COLOR: Record<"exacto" | "signo" | "fallo", string> = {
   exacto: "#2E8B57",
@@ -158,7 +158,7 @@ function SectionToggle({ label, open, onToggle }: { label: string; open: boolean
 }
 
 function GroupView({
-  grupo, player, equipoGrupo, real, mejoresTerceros, extra,
+  grupo, player, equipoGrupo, real, mejoresTerceros, extra, players
 }: {
   grupo: string;
   player: Player;
@@ -166,6 +166,7 @@ function GroupView({
   real: RealResults;
   mejoresTerceros: ReturnType<typeof calcMejoresTerceros>;
   extra: RealExtra;
+  players: Player[];
 }) {
   const standing = useMemo(() => {
     const st = calcGrupoStanding(grupo, real);
@@ -180,89 +181,60 @@ function GroupView({
     return st;
   }, [grupo, real, extra]);
 
-  const scorePos = scoreGrupoPositions(
-    grupo,
-    standing.stats,
-    mejoresTerceros,
-    player.posicion_grupos,
-    player.clasif_dieciseisavos,
-  );
+  const scorePos = useMemo(() => {
+    return scoreGrupoPositions(
+      grupo,
+      standing.stats,
+      mejoresTerceros,
+      player.posicion_grupos,
+      player.clasif_dieciseisavos,
+    );
+  }, [grupo, standing.stats, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos]);
   
-  const matches = player.fase_grupos.filter(
-    (m) => equipoGrupo[m.local] === grupo && equipoGrupo[m.visitante] === grupo
-  );
+  const matches = useMemo(() => {
+    return player.fase_grupos.filter(
+      (m) => equipoGrupo[m.local] === grupo && equipoGrupo[m.visitante] === grupo
+    );
+  }, [player.fase_grupos, equipoGrupo, grupo]);
 
-  // Simulation local de última jornada jugada alternativo
-  const simUltima = useMemo(() => {
-    if (!standing.stats || standing.stats.length === 0 || matches.length === 0) return null;
-
-    const jugadosConResultados = matches.filter(m => real[m.partido]);
-    if (jugadosConResultados.length === 0) return null;
-    
-    const ultimoMatch = jugadosConResultados[jugadosConResultados.length - 1];
-    const resultadoReal = real[ultimoMatch.partido]!;
-    const ptsActual = scorePos.total;
-
-    const candidatos = [
-      { local: 1, visitante: 0, desc: `gana ${ultimoMatch.local}` },
-      { local: 0, visitante: 0, desc: `empate` },
-      { local: 0, visitante: 1, desc: `gana ${ultimoMatch.visitante}` },
-    ];
-
-    let mejorAlternativo: any = null;
-
-    for (const res of candidatos) {
-      const esReal = Math.sign(res.local - res.visitante) === Math.sign(resultadoReal.local - resultadoReal.visitante);
-      if (esReal) continue;
-
-      const simStats = standing.stats.map(s => {
-        return { ...s };
-      });
-
-      const loc = simStats.find(s => s.equipo === ultimoMatch.local);
-      const vis = simStats.find(s => s.equipo === ultimoMatch.visitante);
-      
-      if (loc && vis) {
-        if (res.local > res.visitante) { loc.pts += 3; }
-        else if (res.local < res.visitante) { vis.pts += 3; }
-        else { loc.pts += 1; vis.pts += 1; }
+  // Puntos reales que hizo el usuario EN LOS PARTIDOS de este grupo
+  const puntosPartidosUsuario = useMemo(() => {
+    let acc = 0;
+    matches.forEach(m => {
+      const r = real[m.partido];
+      if (r) {
+        acc += scoreMatch(m.pred, r, GRUPO_PTS).pts;
       }
+    });
+    return acc;
+  }, [matches, real]);
 
-      const simStanding = [...simStats].sort((a, b) => b.pts - a.pts);
-      const scoreSimulado = scoreGrupoPositions(grupo, simStanding, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos);
+  // Puntos TOTALES reales conseguidos en el grupo (Tabla + Partidos)
+  const totalPuntosGrupoUsuario = scorePos.total + puntosPartidosUsuario;
 
-      if (!mejorAlternativo || scoreSimulado.total > mejorAlternativo.pts) {
-        mejorAlternativo = { pts: scoreSimulado.total, standing: simStanding, descripcion: res.desc };
-      }
-    }
-
-    if (!mejorAlternativo || mejorAlternativo.pts <= ptsActual) return null;
-
-    return { 
-      mejorAlternativo, 
-      ptsActual, 
-      partido: { local: ultimoMatch.local, visitante: ultimoMatch.visitante }, 
-      resultadoReal 
-    };
-  }, [grupo, real, standing.stats, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos, matches, scorePos.total]);
-
-  // Proyecciones dinámicas completas (Mejor, Intermedio, Peor) incluyendo puntos por partidos individuales
+  // Calculamos los escenarios teóricos previos (usando los dos últimos partidos que corresponden a la J3)
   const { mejor, peor, escenarioIntermedio } = useMemo(() => {
+    const partidosJ3 = matches.slice(-2);
+    
+    const pendientesParaScenarios = standing.pendientes.length > 0
+      ? standing.pendientes
+      : partidosJ3.map(m => ({ partido: m.partido, local: m.local, visitante: m.visitante, kickoff: "" }));
+
     const baseScenarios = bestWorstScenario(
       grupo,
       standing.stats,
-      standing.pendientes,
+      pendientesParaScenarios,
       mejoresTerceros,
       player.posicion_grupos,
       player.clasif_dieciseisavos,
       matches
     );
 
-    if (standing.pendientes.length === 0 || !baseScenarios.mejor || !baseScenarios.peor) {
+    if (standing.pendientes.length === 0) {
       return { ...baseScenarios, escenarioIntermedio: null };
     }
 
-    if (baseScenarios.mejor.pts === baseScenarios.peor.pts) {
+    if (baseScenarios.mejor?.pts === baseScenarios.peor?.pts) {
       return { ...baseScenarios, escenarioIntermedio: null };
     }
 
@@ -274,16 +246,8 @@ function GroupView({
       { local: 0, visitante: 1, desc: `gana ${f.visitante}` },
     ];
 
-    interface EscenarioSimulado {
-      pts: number;
-      standing: TeamStatType[];
-      descripcion: string;
-      desglose: string;
-    }
+    let todasLasSims: { pts: number; standing: TeamStatType[]; descripcion: string; desglose: string; }[] = [];
 
-    let todasLasSims: EscenarioSimulado[] = [];
-
-    // Helper para emular el cálculo de puntos de los partidos del jugador frente a una simulación de resultados
     const calcularPtsPartidosSimulados = (resSimulados: { local: number; visitante: number }[]) => {
       let ptsPartidos = 0;
       standing.pendientes.forEach((f, idx) => {
@@ -312,75 +276,76 @@ function GroupView({
     };
 
     if (standing.pendientes.length === 1) {
-      for (const r1 of obtenerOpciones(standing.pendientes[0])) {
-        const simStats: Record<string, TeamStatType> = {};
-        for (const s of standing.stats) simStats[s.equipo] = { ...s };
+      const pnd = standing.pendientes[0];
+      for (const r1 of obtenerOpciones(pnd)) {
+        const simReal: RealResults = { ...real, [pnd.partido]: { local: r1.local, visitante: r1.visitante } };
+        const stSim = calcGrupoStanding(grupo, simReal);
         
-        const loc = simStats[standing.pendientes[0].local];
-        const vis = simStats[standing.pendientes[0].visitante];
-        if (loc && vis) {
-          loc.pts += r1.local > r1.visitante ? 3 : r1.local === r1.visitante ? 1 : 0;
-          vis.pts += r1.visitante > r1.local ? 3 : r1.local === r1.visitante ? 1 : 0;
+        const guardadas: string[] = [];
+        for (let r = 1; r <= 4; r++) {
+          const v = extra[normPos(`${r}º GRUPO ${grupo}`)];
+          if (typeof v === "string" && v) guardadas.push(v);
         }
-        const simStanding = Object.values(simStats).sort((a,b) => b.pts - a.pts);
-        const sPos = scoreGrupoPositions(grupo, simStanding, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos);
-        
-        // CORRECCIÓN: Ahora el escenario intermedio sí cuenta los puntos del partido
+        if (guardadas.length === 4) {
+          stSim.stats.sort((a, b) => guardadas.indexOf(a.equipo) - guardadas.indexOf(b.equipo));
+        }
+
+        const sPos = scoreGrupoPositions(grupo, stSim.stats, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos);
         const ptsP = calcularPtsPartidosSimulados([r1]);
         const totalSimCombo = sPos.total + ptsP;
         const desgloseStr = ptsP > 0 
           ? `${sPos.total} por tabla + ${ptsP} por partido` 
           : `${sPos.total} pts posiciones`;
 
-        todasLasSims.push({ pts: totalSimCombo, standing: simStanding, descripcion: r1.desc, desglose: desgloseStr });
+        todasLasSims.push({ pts: totalSimCombo, standing: stSim.stats, descripcion: r1.desc, desglose: desgloseStr });
       }
     } else if (standing.pendientes.length === 2) {
-      for (const r1 of obtenerOpciones(standing.pendientes[0])) {
-        for (const r2 of obtenerOpciones(standing.pendientes[1])) {
-          const simStats: Record<string, TeamStatType> = {};
-          for (const s of standing.stats) simStats[s.equipo] = { ...s };
+      const pnd1 = standing.pendientes[0];
+      const pnd2 = standing.pendientes[1];
+      for (const r1 of obtenerOpciones(pnd1)) {
+        for (const r2 of obtenerOpciones(pnd2)) {
+          const simReal: RealResults = { 
+            ...real, 
+            [pnd1.partido]: { local: r1.local, visitante: r1.visitante },
+            [pnd2.partido]: { local: r2.local, visitante: r2.visitante }
+          };
+          const stSim = calcGrupoStanding(grupo, simReal);
           
-          const loc1 = simStats[standing.pendientes[0].local]; 
-          const vis1 = simStats[standing.pendientes[0].visitante];
-          if (loc1 && vis1) {
-            loc1.pts += r1.local > r1.visitante ? 3 : r1.local === r1.visitante ? 1 : 0;
-            vis1.pts += r1.visitante > r1.local ? 3 : r1.local === r1.visitante ? 1 : 0;
+          const guardadas: string[] = [];
+          for (let r = 1; r <= 4; r++) {
+            const v = extra[normPos(`${r}º GRUPO ${grupo}`)];
+            if (typeof v === "string" && v) guardadas.push(v);
           }
-          const loc2 = simStats[standing.pendientes[1].local]; 
-          const vis2 = simStats[standing.pendientes[1].visitante];
-          if (loc2 && vis2) {
-            loc2.pts += r2.local > r2.visitante ? 3 : r2.local === r2.visitante ? 1 : 0;
-            vis2.pts += r2.visitante > r2.local ? 3 : r2.local === r2.visitante ? 1 : 0;
+          if (guardadas.length === 4) {
+            stSim.stats.sort((a, b) => guardadas.indexOf(a.equipo) - guardadas.indexOf(b.equipo));
           }
-          const simStanding = Object.values(simStats).sort((a,b) => b.pts - a.pts);
-          const sPos = scoreGrupoPositions(grupo, simStanding, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos);
-          
-          // CORRECCIÓN: Ahora el escenario intermedio sí cuenta los puntos de los partidos
+
+          const sPos = scoreGrupoPositions(grupo, stSim.stats, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos);
           const ptsP = calcularPtsPartidosSimulados([r1, r2]);
           const totalSimCombo = sPos.total + ptsP;
           const desgloseStr = ptsP > 0 
             ? `${sPos.total} por tabla + ${ptsP} por partidos` 
             : `${sPos.total} pts posiciones`;
 
-          todasLasSims.push({ pts: totalSimCombo, standing: simStanding, descripcion: `${r1.desc} y ${r2.desc}`, desglose: desgloseStr });
+          todasLasSims.push({ pts: totalSimCombo, standing: stSim.stats, descripcion: `${r1.desc} y ${r2.desc}`, desglose: desgloseStr });
         }
       }
     }
 
-    const targetPts = (baseScenarios.mejor.pts + baseScenarios.peor.pts) / 2;
+    const targetPts = ((baseScenarios.mejor?.pts ?? 0) + (baseScenarios.peor?.pts ?? 0)) / 2;
     let mejorIntermedio = todasLasSims[0];
     
     if (mejorIntermedio) {
       let menorDiff = Math.abs(mejorIntermedio.pts - targetPts);
       for (const sim of todasLasSims) {
         const diff = Math.abs(sim.pts - targetPts);
-        if (diff < menorDiff && sim.pts > baseScenarios.peor.pts && sim.pts < baseScenarios.mejor.pts) {
+        if (diff < menorDiff && sim.pts > baseScenarios.peor!.pts && sim.pts < baseScenarios.mejor!.pts) {
           menorDiff = diff;
           mejorIntermedio = sim;
         }
       }
 
-      if (mejorIntermedio.pts === baseScenarios.mejor.pts || mejorIntermedio.pts === baseScenarios.peor.pts) {
+      if (mejorIntermedio.pts === baseScenarios.mejor?.pts || mejorIntermedio.pts === baseScenarios.peor?.pts) {
         const alternativa = todasLasSims.find(s => s.pts !== baseScenarios.mejor!.pts && s.pts !== baseScenarios.peor!.pts);
         if (alternativa) mejorIntermedio = alternativa;
       }
@@ -388,13 +353,201 @@ function GroupView({
 
     return {
       ...baseScenarios,
-      escenarioIntermedio: mejorIntermedio && mejorIntermedio.pts !== baseScenarios.mejor.pts && mejorIntermedio.pts !== baseScenarios.peor.pts ? mejorIntermedio : null
+      escenarioIntermedio: mejorIntermedio && mejorIntermedio.pts !== baseScenarios.mejor?.pts && mejorIntermedio.pts !== baseScenarios.peor?.pts ? mejorIntermedio : null
     };
-  }, [grupo, standing.stats, standing.pendientes, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos, matches]);
+  }, [grupo, real, extra, standing.stats, standing.pendientes, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos, matches]);
 
-  const userPositions = player.posicion_grupos
-    .filter((p) => p.puesto.includes(`GRUPO ${grupo}`))
-    .sort((a, b) => parseInt(a.puesto[0]) - parseInt(b.puesto[0]));
+  const simUltima = useMemo(() => {
+    if (!standing.stats || standing.stats.length === 0 || matches.length === 0 || standing.pendientes.length === 0) return null;
+
+    const jugadosConResultados = matches.filter(m => real[m.partido]);
+    if (jugadosConResultados.length === 0) return null;
+    
+    const ultimoMatch = jugadosConResultados[jugadosConResultados.length - 1];
+    const resultadoReal = real[ultimoMatch.partido]!;
+    const ptsActual = scorePos.total;
+
+    const candidatos = [
+      { local: 1, visitante: 0, desc: `gana ${ultimoMatch.local}` },
+      { local: 0, visitante: 0, desc: `empate` },
+      { local: 0, visitante: 1, desc: `gana ${ultimoMatch.visitante}` },
+    ];
+
+    let mejorAlternativo: any = null;
+
+    for (const res of candidatos) {
+      const esReal = Math.sign(res.local - res.visitante) === Math.sign(resultadoReal.local - resultadoReal.visitante);
+      if (esReal) continue;
+
+      const simReal: RealResults = { ...real, [ultimoMatch.partido]: { local: res.local, visitante: res.visitante } };
+      const stSim = calcGrupoStanding(grupo, simReal);
+      
+      const guardadas: string[] = [];
+      for (let r = 1; r <= 4; r++) {
+        const v = extra[normPos(`${r}º GRUPO ${grupo}`)];
+        if (typeof v === "string" && v) guardadas.push(v);
+      }
+      if (guardadas.length === 4) {
+        stSim.stats.sort((a, b) => guardadas.indexOf(a.equipo) - guardadas.indexOf(b.equipo));
+      }
+
+      const scoreSimulado = scoreGrupoPositions(grupo, stSim.stats, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos);
+
+      if (!mejorAlternativo || scoreSimulado.total > mejorAlternativo.pts) {
+        mejorAlternativo = { pts: scoreSimulado.total, standing: stSim.stats, descripcion: res.desc };
+      }
+    }
+
+    if (!mejorAlternativo || mejorAlternativo.pts <= ptsActual) return null;
+
+    return { 
+      mejorAlternativo, 
+      ptsActual, 
+      partido: { local: ultimoMatch.local, visitante: ultimoMatch.visitante }, 
+      resultadoReal 
+    };
+  }, [grupo, real, extra, standing.stats, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos, matches, scorePos.total, standing.pendientes.length]);
+
+// Análisis Cruel Post-Grupo (Cuando pendientes === 0) TOTALMENTE REDISEÑADO CON SENTIDO COMÚN
+  const analisisCruelFinal = useMemo(() => {
+    if (standing.pendientes.length !== 0) return null;
+
+    const maximoPosible = mejor?.pts ?? 25;
+    const minimoPosible = peor?.pts ?? 0;
+
+      // 1. Contar aciertos exactos de marcador (Limitado estrictamente a los matches del grupo)
+      let partidosClavados = 0;
+      matches.forEach(m => {
+        const idPartidoMapeado = m.partido.trim().toLowerCase();
+        const claveReal = Object.keys(real).find(k => k.trim().toLowerCase() === idPartidoMapeado);
+        const r = claveReal ? real[claveReal] : null;
+
+        if (r && r.local !== undefined && r.visitante !== undefined) {
+          const gL_pred = Number(m.pred.local);
+          const gV_pred = Number(m.pred.visitante);
+          const gL_real = Number(r.local);
+          const gV_real = Number(r.visitante);
+
+          if (!isNaN(gL_pred) && !isNaN(gL_real) && gL_pred === gL_real && gV_pred === gV_real) {
+            partidosClavados++;
+          }
+        }
+      });
+
+    // 2. Calcular cuántas posiciones de la tabla clavó el usuario en este grupo
+    let posicionesClavadas = 0;
+    const rankingRealGrupo = standing.stats || [];
+    const pronosticoUsuarioGrupo = player.posicion_grupos
+      .filter((p) => p.puesto.includes(`GRUPO ${grupo}`))
+      .sort((a, b) => parseInt(a.puesto[0]) - parseInt(b.puesto[0]));
+
+    rankingRealGrupo.forEach((eqReal, idx) => {
+      if (pronosticoUsuarioGrupo[idx]?.equipo === eqReal.equipo) {
+        posicionesClavadas++;
+      }
+    });
+
+    // 3. Calcular ranking de puntos del grupo entre todos los rivales
+    const rankingGrupoRivales = players.map(p => {
+      const pMatches = p.fase_grupos.filter(m => equipoGrupo[m.local] === grupo && equipoGrupo[m.visitante] === grupo);
+      let ptsP = 0;
+      pMatches.forEach(m => {
+        const r = real[m.partido];
+        if (r) ptsP += scoreMatch(m.pred, r, GRUPO_PTS).pts;
+      });
+      const sPos = scoreGrupoPositions(grupo, standing.stats, mejoresTerceros, p.posicion_grupos, p.clasif_dieciseisavos);
+      return { nombre: p.nombre, total: sPos.total + ptsP, id: p.id };
+    }).sort((a, b) => b.total - a.total);
+
+    const miPuestoEnGrupo = rankingGrupoRivales.findIndex(r => r.id === player.id) + 1;
+    const totalRivales = rankingGrupoRivales.length;
+    const esUltimo = miPuestoEnGrupo === totalRivales;
+
+    const mejorDeTodos = rankingGrupoRivales[0];
+    const peorDeTodos = rankingGrupoRivales[totalRivales - 1];
+
+    // ==========================================
+    // BLOQUE 1: RENDIMIENTO HISTÓRICO (GLOBAL)
+    // ==========================================
+    let veredictoGlobal = "";
+    
+    if (miPuestoEnGrupo === 1) {
+      if (posicionesClavadas >= 3) {
+        veredictoGlobal = `Lideras el Grupo ${grupo} por pura mente analítica. Tu lectura de las posiciones finales fue perfecta (${posicionesClavadas} de 4). Los marcadores exactos te dieron un poco igual (metiste ${partidosClavados}), dominaste el destino del grupo.`;
+      } else {
+        veredictoGlobal = `Estás en la cima gracias a tu brutal pegada con los marcadores. Clavaste ${partidosClavados} resultados exactos y, aunque la tabla final te quedó algo caótica con ${posicionesClavadas} posiciones correctas, tu puntería te corona como líder absoluto.`;
+      }
+    } 
+    else if (miPuestoEnGrupo === 2 || miPuestoEnGrupo === 3) {
+      if (posicionesClavadas >= 3) {
+        veredictoGlobal = `Excelente lectura estratégica. Clavaste casi toda la tabla de posiciones (${posicionesClavadas} de 4). Te ha faltado rascar más que tus ${partidosClavados} marcadores exactos para quitarle el liderato a ${mejorDeTodos.nombre}, pero tu base es impecable.`;
+      } else {
+        veredictoGlobal = `Estás en el podio gracias a tus fogonazos de genialidad: esos ${partidosClavados} marcadores exactos te sostienen arriba, compensando una tabla de posiciones donde solo rescataste ${posicionesClavadas} equipos exactos.`;
+      }
+    } 
+    else if (!esUltimo && miPuestoEnGrupo <= 6) { // Zona Media
+      if (posicionesClavadas >= 3) {
+        veredictoGlobal = `Tiene mérito lo tuyo: eres un visionario teórico pero un desastre clínico. Has clavado ${posicionesClavadas} posiciones en la tabla, pero tu triste acierto de ${partidosClavados} marcadores exactos te condena a esta gris mitad de tabla. Sabías quién pasaba, pero no cómo jugaban.`;
+      } else if (partidosClavados === 0) {
+        veredictoGlobal = `Flotas en una cómoda y cobarde mediocridad. No has sido capaz de clavar ni un solo marcador exacto en todo el grupo, y tu tabla de posiciones con apenas ${posicionesClavadas} aciertos da un poco de pereza.`;
+      } else {
+        veredictoGlobal = `Sumaste lo justo para sobrevivir en tierra de nadie. Metiste ${partidosClavados} resultados exactos, pero tu lectura general del grupo fue tan floja que con solo ${posicionesClavadas} posiciones atinadas estos chispazos no lucen.`;
+      }
+    } 
+    else { // Pozo y Colistas
+      if (posicionesClavadas >= 3) {
+        veredictoGlobal = `La paradoja del fracaso: clavaste una barbaridad de la tabla (${posicionesClavadas} posiciones de 4), pero el colapso absoluto de tus porras de partidos con solo ${partidosClavados} exactos ha sido tan dantesco que te has ido al subsuelo.`;
+      } else if (partidosClavados === 0) {
+        veredictoGlobal = `Dantesco. Registras 0 marcadores exactos y una tabla de posiciones lamentable con apenas ${posicionesClavadas} aciertos. Estás arrastrándote peligrosamente cerca de tu peor escenario estimado (${minimoPosible}). Una desgracia visual.`;
+      } else {
+        veredictoGlobal = `De nada te sirve haber cazado ${partidosClavados} marcador(es) exacto(s) en los partidos si tu lógica de posiciones finales fue un desastre con solo ${posicionesClavadas} aciertos. Puntería estéril que te condena al fondo.`;
+      }
+    }
+
+    // ==========================================
+    // BLOQUE 2 CORREGIDO: RESUMEN DE LA JORNADA J3 (CON SENTIDO COMÚN)
+    // ==========================================
+    let veredictoJ3 = "";
+
+    if (posicionesClavadas === 0) {
+      veredictoJ3 = `La jornada final simultánea te desintegró por completo. Clavaste la asombrosa cantidad de 0 posiciones reales en la tabla. El caos de los minutos finales borró tu estrategia del mapa, dejándote solo con ${partidosClavados} marcadores perfectos.`;
+    } else if (posicionesClavadas >= 3) {
+      veredictoJ3 = `La última jornada a la vez demostró que leías bien el futuro de la tabla con ${posicionesClavadas} posiciones perfectas, pero el vaivén de los goles y tus discretos ${partidosClavados} aciertos en porras congelaron tu ascenso.`;
+    } else {
+      // Casos intermedios (1 o 2 posiciones exactas)
+      if (partidosClavados > 0) {
+        // NUEVO: Caso donde compensas la tabla con marcadores exactos brutales
+        veredictoJ3 = `Salvaste los muebles en el último segundo. Aunque la tabla final se te resistió con apenas ${posicionesClavadas} posiciones exactas, tu tremenda puntería con ${partidosClavados} marcador(es) exacto(s) en las porras amortiguó el golpe y evitó el desastre.`;
+      } else if (esUltimo || miPuestoEnGrupo >= 7) {
+        veredictoJ3 = `La jornada final simultánea fue una agonía televisada en directo hacia el fondo. Conseguiste amarrar apenas ${posicionesClavadas} posiciones exactas en la tabla, una renta ridícula que junto a tus ${partidosClavados} plenos de goles te sepultó.`;
+      } else {
+        veredictoJ3 = `La última jornada simultánea te dejó a medias. Acertaste apenas ${posicionesClavadas} posiciones exactas en la tabla de posiciones, lo justo para amortiguar el golpe pero insuficiente para salir de la zona gris.`;
+      }
+    }
+
+    // ==========================================
+    // BLOQUE 3: HUMILLACIÓN COMPARATIVA (RIVALES)
+    // ==========================================
+    let veredictoRivales = "";
+    
+    if (miPuestoEnGrupo === 1) {
+      veredictoRivales = `Eres el Rey indiscutible del Grupo ${grupo}. Miras hacia abajo y solo ves un desierto de mediocridad. Que te limpien las boots antes de hablarte.`;
+    } else if (miPuestoEnGrupo === 2 || miPuestoEnGrupo === 3) {
+      veredictoRivales = `Puesto ${miPuestoEnGrupo} de ${totalRivales}. Estás arriba, oliéndole el cuello a ${mejorDeTodos.nombre} y marcando una distancia sana con los desgraciados del fondo.`;
+    } else if (!esUltimo && miPuestoEnGrupo <= 6) {
+      veredictoRivales = `Estás en el puesto ${miPuestoEnGrupo} de ${totalRivales}. Enterrado vivo en la intrascendencia de la mitad de la tabla. Ni amenazas al líder ${mejorDeTodos.nombre}, ni das tanta risa como la desgracia de ${peorDeTodos.nombre}.`;
+    } else {
+      veredictoRivales = `Puesto ${miPuestoEnGrupo} de ${totalRivales}. Estás en el subsuelo del Grupo ${grupo}. ${esUltimo ? `Eres oficialmente el bufón del grupo, vas ÚLTIMO.` : `Lo único que te salva de la humillación pública total es que ${peorDeTodos.nombre} está dando todavía más asco debajo de ti.`}`;
+    }
+
+    return { veredictoGlobal, veredictoJ3, veredictoRivales };
+  }, [standing.pendientes.length, mejor, peor, player, grupo, equipoGrupo, real, players, standing.stats, mejoresTerceros]);
+
+  const userPositions = useMemo(() => {
+    return player.posicion_grupos
+      .filter((p) => p.puesto.includes(`GRUPO ${grupo}`))
+      .sort((a, b) => parseInt(a.puesto[0]) - parseInt(b.puesto[0]));
+  }, [player.posicion_grupos, grupo]);
 
   return (
     <div>
@@ -405,7 +558,7 @@ function GroupView({
           display: "flex", justifyContent: "space-between"
         }}>
           <span style={{ flex: 1 }}>Tu Pronóstico</span>
-          <span style={{ width: 60, textAlign: "right" }}>Porra</span>
+          <span style={{ width: 100, textAlign: "right" }}>Porra</span>
         </div>
 
         {userPositions.map((userPos, idx) => {
@@ -414,7 +567,9 @@ function GroupView({
           const posRealNum = standing.stats.findIndex(s => s.equipo === userPos.equipo) + 1;
 
           const det = scorePos.detalle.find(d => d.equipo === userPos.equipo);
-          const ptsTotales = (det?.ptsPosicion ?? 0) + (det?.ptsClasif ?? 0);
+          const ptsPosicion = det?.ptsPosicion ?? 0;
+          const ptsClasif = det?.ptsClasif ?? 0;
+          const ptsTotales = ptsPosicion + ptsClasif;
           const clasificaReal = det?.clasificaReal ?? false;
 
           let rowBg: string = "transparent";
@@ -426,35 +581,25 @@ function GroupView({
               rowBg = "rgba(211, 47, 47, 0.06)";
               textColor = C.rojo;
               indicatorColor = C.rojo;
-            } else if (clasificaReal) {
-              if (ptsTotales === 8) {
-                rowBg = "rgba(46, 125, 85, 0.08)";
-                textColor = "#2E7D55";
-                indicatorColor = "#2E7D55";
-              } else {
-                rowBg = "rgba(184, 115, 51, 0.08)";
-                textColor = "#B87333";
-                indicatorColor = "#B87333";
-              }
+            } else if (posRealNum === posPronosticada) {
+              rowBg = "rgba(46, 125, 85, 0.08)";
+              textColor = "#2E7D55";
+              indicatorColor = "#2E7D55";
             } else {
-              if (ptsTotales === 5) {
-                rowBg = "rgba(46, 125, 85, 0.08)";
-                textColor = "#2E7D55";
-                indicatorColor = "#2E7D55";
-              } else {
-                rowBg = "rgba(184, 115, 51, 0.08)";
-                textColor = "#B87333";
-                indicatorColor = "#B87333";
-              }
+              rowBg = "rgba(184, 115, 51, 0.08)";
+              textColor = "#B87333";
+              indicatorColor = "#B87333";
             }
           }
 
           return (
             <div key={userPos.equipo} style={{
               display: "flex", alignItems: "center", gap: 8,
-              padding: "7px 0",
+              padding: "7px 4px",
               borderBottom: `1px solid ${C.chalk}`,
               background: rowBg,
+              borderRadius: 4,
+              marginBottom: 2
             }}>
               <span style={{
                 fontFamily: "'DM Mono', monospace", fontSize: 12,
@@ -477,33 +622,45 @@ function GroupView({
                   <span style={{
                     fontSize: "9px",
                     fontWeight: 800,
-                    color: "#0B5A53",
+                    color: textColor === "#2E7D55" ? "#0B5A53" : "#7A4A10",
                     backgroundColor: "#FAF8F2",
-                    border: "1.5px solid #0D695E",
+                    border: `1.5px solid ${textColor === "#2E7D55" ? "#0D695E" : "#B87333"}`,
                     borderRadius: "4px",
                     padding: "1px 5px",
                     letterSpacing: "0.03em",
                     lineHeight: "1",
                     flexShrink: 0,
-                    boxShadow: "0px 1px 0px rgba(184, 115, 51, 0.3)"
+                    boxShadow: "0px 1px 0px rgba(184, 115, 51, 0.15)"
                   }}>
                     CLASIF.
                   </span>
                 )}
               </div>
 
-              <div style={{ width: 60, textAlign: "right", flexShrink: 0, fontSize: 11 }}>
+              <div style={{ width: 100, textAlign: "right", flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
                 {ptsTotales > 0 ? (
-                  <span style={{ fontFamily: "'DM Mono', monospace", fontWeight: 700, color: (ptsTotales === 8 || (!clasificaReal && ptsTotales === 5)) ? "#2E8B57" : "#B87333" }}>
-                    +{ptsTotales}
-                    {posRealNum > 0 && posRealNum !== posPronosticada && (
-                      <span style={{ fontWeight: 400, fontSize: 10, color: C.muted, marginLeft: 2 }}>
-                        ({posRealNum}º)
-                      </span>
-                    )}
-                  </span>
+                  <>
+                    <span style={{ 
+                      fontFamily: "'DM Mono', monospace", 
+                      fontWeight: 700, 
+                      fontSize: 11,
+                      color: textColor 
+                    }}>
+                      +{ptsTotales} pts
+                      {posRealNum > 0 && posRealNum !== posPronosticada && (
+                        <span style={{ fontWeight: 400, fontSize: 10, color: C.muted, marginLeft: 2 }}>
+                          ({posRealNum}º)
+                        </span>
+                      )}
+                    </span>
+                    <span style={{ fontSize: 9, color: C.muted, fontFamily: "'DM Mono', monospace", marginTop: -2 }}>
+                      {ptsClasif > 0 
+                        ? `(${ptsPosicion} pos, ${ptsClasif} clsf)` 
+                        : `(${ptsPosicion} pos)`}
+                    </span>
+                  </>
                 ) : posRealNum > 0 && posRealNum !== posPronosticada ? (
-                  <span style={{ fontFamily: "'DM Mono', monospace", color: indicatorColor }}>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: indicatorColor }}>
                     ({posRealNum}º)
                   </span>
                 ) : (
@@ -528,7 +685,6 @@ function GroupView({
         </span>
       </div>
 
-      {/* Simulación de última jornada jugada */}
       {simUltima && (
         <div style={{
           marginBottom: 16, padding: "10px 12px",
@@ -569,7 +725,7 @@ function GroupView({
         </div>
       )}
 
-      {/* Los 3 escenarios dinámicos perfectamente integrados con puntos de partidos */}
+      {/* ── ESCENARIOS ANTES DE QUE SE CIERREN LOS PARTIDOS ── */}
       {standing.pendientes.length > 0 && (mejor || peor) && (
         <div style={{
           marginBottom: 16, padding: "14px",
@@ -584,7 +740,6 @@ function GroupView({
 
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             
-            {/* 1. ESCENARIO IDEAL REALISTA */}
             {mejor && (
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -614,7 +769,6 @@ function GroupView({
 
             <div style={{ height: 1, background: C.line, opacity: 0.4 }} />
 
-            {/* 2. ESCENARIO INTERMEDIO REAL */}
             {escenarioIntermedio && (
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -644,12 +798,11 @@ function GroupView({
 
             <div style={{ height: 1, background: C.line, opacity: 0.4 }} />
 
-            {/* 3. PEOR ESCENARIO */}
             {peor && (
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: C.rojo }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#C32F2F" }}>
                       ❌ Peor Escenario: <span style={{ fontWeight: 500, color: C.ink, textTransform: "lowercase" }}>{peor.descripcion}</span>
                     </div>
                     <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>
@@ -676,7 +829,54 @@ function GroupView({
         </div>
       )}
 
-      {/* Listado normal de partidos del grupo */}
+      {/* ── ESCENARIO DESPUÉS: JUICIO FINAL DESPIADADO CUANDO QUEDAN 0 PARTIDOS PENDIENTES ── */}
+      {standing.pendientes.length === 0 && analisisCruelFinal && (
+        <div style={{
+          marginBottom: 16, padding: "14px",
+          background: "#FFF5F5", borderRadius: 8, border: `1px solid ${C.rojo}`
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, borderBottom: `1px solid ${C.rojo}`, paddingBottom: 6, marginBottom: 12 }}>
+            <span style={{ fontSize: 15 }}>💀</span>
+            <span style={{ ...secLabel, fontSize: 12, color: C.rojo }}>
+              Grupo Cerrado · Veredicto del Consejo de Sabios
+            </span>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                📊 Rendimiento Histórico en el Grupo:
+              </div>
+              <div style={{ fontSize: 12.5, color: C.ink, marginTop: 3, lineHeight: "1.4", fontStyle: "italic" }}>
+                "{analisisCruelFinal.veredictoGlobal}"
+              </div>
+            </div>
+
+            <div style={{ height: 1, background: C.line, opacity: 0.3 }} />
+
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                ⏱️ Resumen de la Última Jornada:
+              </div>
+              <div style={{ fontSize: 12.5, color: C.ink, marginTop: 3, lineHeight: "1.4", fontStyle: "italic" }}>
+                "{analisisCruelFinal.veredictoJ3}"
+              </div>
+            </div>
+
+            <div style={{ height: 1, background: C.line, opacity: 0.3 }} />
+
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                🥊 Humillación Comparativa en la Porra:
+              </div>
+              <div style={{ fontSize: 12.5, color: C.ink, marginTop: 3, lineHeight: "1.4", fontStyle: "italic" }}>
+                "{analisisCruelFinal.veredictoRivales}"
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ marginBottom: 12 }}>
         {matches.map((m, i) => {
           const r = real[m.partido];
@@ -697,15 +897,15 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
   const [grupoTab, setGrupoTab] = useState<string>("todos");
   const [rondaTab, setRondaTab] = useState<string>("dieciseisavos");
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["honor"]));
-  
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     setIsHydrated(true);
   }, []);
 
-  const player = players.find((p) => p.id === picked) ?? players[0];
-  if (!player) return null;
+  const player = useMemo(() => {
+    return players.find((p) => p.id === picked) ?? players[0];
+  }, [players, picked]);
 
   const rankingBaseOficial = useMemo(() => {
     if (ranked && ranked.length > 0) return ranked;
@@ -715,35 +915,46 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
     })).sort((a, b) => b.score.total - a.score.total);
   }, [ranked, players, real, extra]);
 
-  const score = scorePlayer(player, real, extra);
-  const h = player.cuadro_honor;
-  const equipoGrupo = buildEquipoGrupoMap(player);
-  const mejoresTerceros = calcMejoresTerceros(real);
+  const score = useMemo(() => {
+    if (!player) return { total: 0, signos: 0, exactos: 0 };
+    return scorePlayer(player, real, extra);
+  }, [player, real, extra]);
 
-  const totalPosicionesGlobal = GRUPOS.reduce((acc, g) => {
-    const standing = calcGrupoStanding(g, real);
-    
-    const guardadas: string[] = [];
-    for (let r = 1; r <= 4; r++) {
-      const v = extra[normPos(`${r}º GRUPO ${g}`)];
-      if (typeof v === "string" && v) guardadas.push(v);
-    }
-    if (guardadas.length === 4) {
-      standing.stats.sort((a, b) => guardadas.indexOf(a.equipo) - guardadas.indexOf(b.equipo));
-    }
+  const h = player?.cuadro_honor;
+  
+  const equipoGrupo = useMemo(() => {
+    return player ? buildEquipoGrupoMap(player) : {};
+  }, [player]);
 
-    const scorePos = scoreGrupoPositions(
-      g,
-      standing.stats,
-      mejoresTerceros,
-      player.posicion_grupos,
-      player.clasif_dieciseisavos
-    );
-    return acc + scorePos.total;
-  }, 0);
+  const mejoresTerceros = useMemo(() => calcMejoresTerceros(real), [real]);
+
+  const totalPosicionesGlobal = useMemo(() => {
+    if (!player) return 0;
+    return GRUPOS.reduce((acc, g) => {
+      const standing = calcGrupoStanding(g, real);
+      
+      const guardadas: string[] = [];
+      for (let r = 1; r <= 4; r++) {
+        const v = extra[normPos(`${r}º GRUPO ${g}`)];
+        if (typeof v === "string" && v) guardadas.push(v);
+      }
+      if (guardadas.length === 4) {
+        standing.stats.sort((a, b) => guardadas.indexOf(a.equipo) - guardadas.indexOf(b.equipo));
+      }
+
+      const scorePos = scoreGrupoPositions(
+        g,
+        standing.stats,
+        mejoresTerceros,
+        player.posicion_grupos,
+        player.clasif_dieciseisavos
+      );
+      return acc + scorePos.total;
+    }, 0);
+  }, [player, real, extra, mejoresTerceros]);
 
   const { puestoActual, puestoSimulado, ptsSimuladoArriba, ptsSimuladoAbajo } = useMemo(() => {
-    if (!rankingBaseOficial || rankingBaseOficial.length === 0) {
+    if (!player || !rankingBaseOficial || rankingBaseOficial.length === 0) {
       return { puestoActual: 0, puestoSimulado: 0, ptsSimuladoActual: 0, ptsSimuladoArriba: null, ptsSimuladoAbajo: null };
     }
 
@@ -789,7 +1000,7 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
       ptsSimuladoArriba: diffArriba,
       ptsSimuladoAbajo: diffAbajo,
     };
-  }, [rankingBaseOficial, player.id, real, mejoresTerceros, extra]);
+  }, [rankingBaseOficial, player, real, mejoresTerceros, extra]);
 
   const subioPuesto = puestoSimulado < puestoActual;
   const bajoPuesto = puestoSimulado > puestoActual;
@@ -802,9 +1013,10 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
     });
   }
 
+  if (!player) return null;
+
   return (
     <div>
-      {/* Selector de jugador */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 18 }}>
         {players.map((p) => (
           <button
@@ -823,7 +1035,6 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
         ))}
       </div>
 
-      {/* Cabecera */}
       <h2 style={hStyle}>{player.nombre}</h2>
       <p style={{ color: C.muted, fontSize: 12.5, margin: "5px 0 0", letterSpacing: ".02em" }}>
         {score.total} puntos · {score.signos + score.exactos} 1X2 · {score.exactos} exactos
@@ -832,45 +1043,46 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
       {/* ── CUADRO DE HONOR ── */}
       <div style={{ marginTop: 22 }}>
         <SectionToggle label="Cuadro de honor" open={openSections.has("honor")} onToggle={() => toggleSection("honor")} />
-        {openSections.has("honor") && <div style={{ marginTop: 10 }}>
-
-        <div style={{ background: C.ink, borderRadius: 4, padding: "12px 14px", marginBottom: 6 }}>
-          <div style={{ fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: C.gold, fontWeight: 700 }}>
-            Campeón
-          </div>
-          <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 22, color: C.chalk, letterSpacing: ".01em", marginTop: 2 }}>
-            {h.campeon || "—"}
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-          {[
-            { label: "Subcampeón", val: h.subcampeon },
-            { label: "3er puesto", val: h.tercero },
-          ].map(({ label, val }) => (
-            <div key={label} style={{ flex: 1, border: `1px solid ${C.line}`, borderRadius: 4, padding: "8px 10px", minWidth: 0 }}>
-              <div style={{ fontSize: 9, letterSpacing: ".08em", textTransform: "uppercase", color: C.muted, fontWeight: 700 }}>
-                {label}
+        {openSections.has("honor") && h && (
+          <div style={{ marginTop: 10 }}>
+            <div style={{ background: C.ink, borderRadius: 4, padding: "12px 14px", marginBottom: 6 }}>
+              <div style={{ fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: C.gold, fontWeight: 700 }}>
+                Campeón
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, marginTop: 3, color: C.ink }}>
-                {val || "—"}
+              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 22, color: C.chalk, letterSpacing: ".01em", marginTop: 2 }}>
+                {h.campeon || "—"}
               </div>
             </div>
-          ))}
-        </div>
 
-        <HonorRow items={[
-          { label: "Bota de oro",    val: h.bota_oro },
-          { label: "Bota de plata",  val: h.bota_plata },
-          { label: "Bota de bronce", val: h.bota_bronce },
-        ]} />
+            <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+              {[
+                { label: "Subcampeón", val: h.subcampeon },
+                { label: "3er puesto", val: h.tercero },
+              ].map(({ label, val }) => (
+                <div key={label} style={{ flex: 1, border: `1px solid ${C.line}`, borderRadius: 4, padding: "8px 10px", minWidth: 0 }}>
+                  <div style={{ fontSize: 9, letterSpacing: ".08em", textTransform: "uppercase", color: C.muted, fontWeight: 700 }}>
+                    {label}
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, marginTop: 3, color: C.ink }}>
+                    {val || "—"}
+                  </div>
+                </div>
+              ))}
+            </div>
 
-        <HonorRow items={[
-          { label: "Balón de oro",    val: h.balon_oro },
-          { label: "Balón de plata",  val: h.balon_plata },
-          { label: "Balón de bronce", val: h.balon_bronce },
-        ]} />
-        </div>}
+            <HonorRow items={[
+              { label: "Bota de oro",    val: h.bota_oro },
+              { label: "Bota de plata",  val: h.bota_plata },
+              { label: "Bota de bronce", val: h.bota_bronce },
+            ]} />
+
+            <HonorRow items={[
+              { label: "Balón de oro",    val: h.balon_oro },
+              { label: "Balón de plata",  val: h.balon_plata },
+              { label: "Balón de bronce", val: h.balon_bronce },
+            ]} />
+          </div>
+        )}
       </div>
 
       {/* ── FASE DE GRUPOS ── */}
@@ -902,7 +1114,6 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
         <div style={{ marginTop: 12 }}>
           {grupoTab === "todos" ? (
             <>
-              {/* Bloque con Sumatorio y Clasificación Simulada */}
               <div style={{
                 marginBottom: 16, padding: "12px 14px",
                 background: C.chalk, borderRadius: 8,
@@ -989,6 +1200,7 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
               real={real}
               mejoresTerceros={mejoresTerceros}
               extra={extra}
+              players={players}
             />
           )}
         </div>
