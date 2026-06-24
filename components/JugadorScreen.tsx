@@ -551,6 +551,35 @@ function GroupView({
 
   return (
     <div>
+      {/* ── TOTAL PUNTOS GRUPO (posiciones + partidos) ── */}
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        marginBottom: 12, padding: "10px 12px",
+        background: C.chalk, borderRadius: 8,
+        borderLeft: `4px solid ${C.ink}`,
+      }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: C.ink, letterSpacing: ".04em", textTransform: "uppercase" }}>
+          Total grupo {grupo} (tabla + partidos)
+        </span>
+        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: 20, color: totalPuntosGrupoUsuario > 0 ? C.pitch : C.muted }}>
+          {totalPuntosGrupoUsuario > 0 ? `+${totalPuntosGrupoUsuario}` : "0"} pts
+        </span>
+      </div>
+
+      {/* ── TOTAL POSICIONES GRUPO ── */}
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        marginBottom: 8, padding: "8px 0",
+        borderBottom: `2px solid ${C.line}`,
+      }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: ".04em", textTransform: "uppercase" }}>
+          Total posiciones grupo {grupo}
+        </span>
+        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: 18, color: scorePos.total > 0 ? C.pitch : C.muted }}>
+          {scorePos.total > 0 ? `+${scorePos.total}` : "0"} pts
+        </span>
+      </div>
+
       <div style={{ marginBottom: 12 }}>
         <div style={{
           fontSize: 9, fontWeight: 700, letterSpacing: ".08em",
@@ -672,58 +701,32 @@ function GroupView({
         })}
       </div>
 
+      {/* ── TOTAL PUNTOS PARTIDOS + LISTA DE PARTIDOS ── */}
       <div style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
-        marginBottom: 12, padding: "8px 0",
-        borderBottom: `2px solid ${C.line}`,
+        marginBottom: 8, padding: "8px 0",
+        borderTop: `2px solid ${C.line}`,
       }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: ".04em", textTransform: "uppercase" }}>
-          Total posiciones grupo {grupo}
+          Total puntos partidos grupo {grupo}
         </span>
-        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: 18, color: scorePos.total > 0 ? C.pitch : C.muted }}>
-          {scorePos.total > 0 ? `+${scorePos.total}` : "0"} pts
+        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: 18, color: puntosPartidosUsuario > 0 ? C.pitch : C.muted }}>
+          {puntosPartidosUsuario > 0 ? `+${puntosPartidosUsuario}` : "0"} pts
         </span>
       </div>
 
-      {simUltima && (
-        <div style={{
-          marginBottom: 16, padding: "10px 12px",
-          background: "rgba(184, 115, 51, 0.07)",
-          borderRadius: 6, border: `1px solid #B87333`,
-        }}>
-          <div style={{
-            fontSize: 9, fontWeight: 800, color: "#7A4A10",
-            marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em",
-          }}>
-            🔮 Si hubiera pasado otra cosa…
-          </div>
-          <div style={{ fontSize: 12, color: C.ink, lineHeight: "1.4" }}>
-            Si en{" "}
-            <strong>{simUltima.partido.local} – {simUltima.partido.visitante}</strong>
-            {" "}hubiera habido{" "}
-            <strong style={{ color: "#B87333" }}>{simUltima.mejorAlternativo.descripcion}</strong>
-            {" "}en vez de{" "}
-            <strong style={{ color: C.muted, fontFamily: "'DM Mono', monospace", fontSize: 11 }}>
-              {simUltima.resultadoReal.local}–{simUltima.resultadoReal.visitante}
-            </strong>
-            {", habrías sumado "}
-            <strong style={{ fontFamily: "'DM Mono', monospace", color: "#2E7D55" }}>
-              +{simUltima.mejorAlternativo.pts}
-            </strong>
-            {" pts en este grupo"}
-            {simUltima.ptsActual > 0 && (
-              <span style={{ color: C.muted }}>
-                {" "}(ahora tienes +{simUltima.ptsActual})
-              </span>
-            )}
-            .
-          </div>
-          <div style={{ fontSize: 10, color: C.muted, marginTop: 5 }}>
-            Clasificación hipotética:{" "}
-            {simUltima.mejorAlternativo.standing.map((s: any, i: number) => `${i + 1}º ${s.equipo}`).join(" · ")}
-          </div>
-        </div>
-      )}
+      <div style={{ marginBottom: 12 }}>
+        {matches.map((m, i) => {
+          const r = real[m.partido];
+          const s = r ? scoreMatch(m.pred, r, GRUPO_PTS) : null;
+          return (
+            <MatchRow key={i} local={m.local} visitante={m.visitante} pred={m.pred}
+              hit={s ? s.hit as Hit : null}
+              pts={s ? s.pts : null}
+            />
+          );
+        })}
+      </div>
 
       {/* ── ESCENARIOS ANTES DE QUE SE CIERREN LOS PARTIDOS ── */}
       {standing.pendientes.length > 0 && (mejor || peor) && (
@@ -877,18 +880,46 @@ function GroupView({
         </div>
       )}
 
-      <div style={{ marginBottom: 12 }}>
-        {matches.map((m, i) => {
-          const r = real[m.partido];
-          const s = r ? scoreMatch(m.pred, r, GRUPO_PTS) : null;
-          return (
-            <MatchRow key={i} local={m.local} visitante={m.visitante} pred={m.pred}
-              hit={s ? s.hit as Hit : null}
-              pts={s ? s.pts : null}
-            />
-          );
-        })}
-      </div>
+      {/* ── SI HUBIERA PASADO OTRA COSA ── */}
+      {simUltima && (
+        <div style={{
+          marginBottom: 16, padding: "10px 12px",
+          background: "rgba(184, 115, 51, 0.07)",
+          borderRadius: 6, border: `1px solid #B87333`,
+        }}>
+          <div style={{
+            fontSize: 9, fontWeight: 800, color: "#7A4A10",
+            marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em",
+          }}>
+            🔮 Si hubiera pasado otra cosa…
+          </div>
+          <div style={{ fontSize: 12, color: C.ink, lineHeight: "1.4" }}>
+            Si en{" "}
+            <strong>{simUltima.partido.local} – {simUltima.partido.visitante}</strong>
+            {" "}hubiera habido{" "}
+            <strong style={{ color: "#B87333" }}>{simUltima.mejorAlternativo.descripcion}</strong>
+            {" "}en vez de{" "}
+            <strong style={{ color: C.muted, fontFamily: "'DM Mono', monospace", fontSize: 11 }}>
+              {simUltima.resultadoReal.local}–{simUltima.resultadoReal.visitante}
+            </strong>
+            {", habrías sumado "}
+            <strong style={{ fontFamily: "'DM Mono', monospace", color: "#2E7D55" }}>
+              +{simUltima.mejorAlternativo.pts}
+            </strong>
+            {" pts en este grupo"}
+            {simUltima.ptsActual > 0 && (
+              <span style={{ color: C.muted }}>
+                {" "}(ahora tienes +{simUltima.ptsActual})
+              </span>
+            )}
+            .
+          </div>
+          <div style={{ fontSize: 10, color: C.muted, marginTop: 5 }}>
+            Clasificación hipotética:{" "}
+            {simUltima.mejorAlternativo.standing.map((s: any, i: number) => `${i + 1}º ${s.equipo}`).join(" · ")}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
