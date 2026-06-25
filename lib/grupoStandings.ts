@@ -42,41 +42,125 @@ export interface MejoresTerceros {
   completo: boolean;
 }
 
-// ---- Desempate por enfrentamiento directo ----
+// ---- Desempate por enfrentamiento directo (criterios FIFA) ----
+// Orden FIFA para grupos de 4 cuando hay empate en puntos:
+// 1) Puntos entre empatados
+// 2) Diferencia de goles entre empatados
+// 3) Goles a favor entre empatados
+// 4) Diferencia de goles global
+// 5) Goles a favor global
+// 6) Alfabético
 
-function getDirectResult(
-  a: TeamStat,
-  b: TeamStat,
+/** Obtiene el resultado del partido entre a y b desde el mapa de directos. */
+function getDirectMatch(
+  a: string,
+  b: string,
   directos: Record<string, { local: number; visitante: number }>
-): number {
-  const r1 = directos[`${a.equipo}vs${b.equipo}`];
-  if (r1) {
-    if (r1.local > r1.visitante) return -1; // a ganó → a va antes
-    if (r1.local < r1.visitante) return 1;  // b ganó → b va antes
-    return 0;
+): { local: number; visitante: number } | null {
+  return directos[`${a}vs${b}`] ?? directos[`${b}vs${a}`]
+    ? directos[`${a}vs${b}`] ?? {
+        local: directos[`${b}vs${a}`].visitante,
+        visitante: directos[`${b}vs${a}`].local,
+      }
+    : null;
+}
+
+/**
+ * Calcula los stats directos (puntos, dg, gf) entre un subgrupo de equipos empatados.
+ * Solo cuenta partidos disputados entre ellos.
+ */
+function calcDirectStats(
+  equipos: string[],
+  directos: Record<string, { local: number; visitante: number }>
+): Record<string, { pts: number; dg: number; gf: number }> {
+  const stats: Record<string, { pts: number; dg: number; gf: number }> = {};
+  for (const eq of equipos) stats[eq] = { pts: 0, dg: 0, gf: 0 };
+
+  for (let i = 0; i < equipos.length; i++) {
+    for (let j = i + 1; j < equipos.length; j++) {
+      const a = equipos[i], b = equipos[j];
+      const r = directos[`${a}vs${b}`];
+      if (r) {
+        stats[a].gf += r.local;  stats[a].dg += r.local - r.visitante;
+        stats[b].gf += r.visitante; stats[b].dg += r.visitante - r.local;
+        if (r.local > r.visitante)       { stats[a].pts += 3; }
+        else if (r.local < r.visitante)  { stats[b].pts += 3; }
+        else                             { stats[a].pts += 1; stats[b].pts += 1; }
+      } else {
+        const r2 = directos[`${b}vs${a}`];
+        if (r2) {
+          stats[b].gf += r2.local;  stats[b].dg += r2.local - r2.visitante;
+          stats[a].gf += r2.visitante; stats[a].dg += r2.visitante - r2.local;
+          if (r2.local > r2.visitante)       { stats[b].pts += 3; }
+          else if (r2.local < r2.visitante)  { stats[a].pts += 3; }
+          else                               { stats[a].pts += 1; stats[b].pts += 1; }
+        }
+      }
+    }
   }
-  const r2 = directos[`${b.equipo}vs${a.equipo}`];
-  if (r2) {
-    if (r2.local > r2.visitante) return 1;  // b ganó → b va antes
-    if (r2.local < r2.visitante) return -1; // a ganó → a va antes
-    return 0;
-  }
-  return 0;
+  return stats;
 }
 
 function sortStanding(
   stats: TeamStat[],
   directos: Record<string, { local: number; visitante: number }> = {}
 ): TeamStat[] {
-  return [...stats].sort((a, b) => {
+  // Paso 1: ordenar por puntos globales
+  const sorted = [...stats].sort((a, b) => {
     if (b.pts !== a.pts) return b.pts - a.pts;
-    if (b.dg  !== a.dg)  return b.dg  - a.dg;
-    if (b.gf  !== a.gf)  return b.gf  - a.gf;
-    // FIX 1: desempate por resultado directo antes del alfabético
-    const direct = getDirectResult(a, b, directos);
-    if (direct !== 0) return direct;
-    return a.equipo.localeCompare(b.equipo);
+    return 0; // empate en puntos → resolver después
   });
+
+  // Paso 2: para cada grupo de equipos empatados en puntos, aplicar criterios FIFA
+  const result: TeamStat[] = [];
+  let i = 0;
+  while (i < sorted.length) {
+    const pts = sorted[i].pts;
+    let j = i + 1;
+    while (j < sorted.length && sorted[j].pts === pts) j++;
+
+    const grupo = sorted.slice(i, j);
+
+    if (grupo.length === 1) {
+      result.push(grupo[0]);
+    } else {
+      // Calcular stats directos entre los empatados
+      const equiposEmpatados = grupo.map(s => s.equipo);
+      const ds = calcDirectStats(equiposEmpatados, directos);
+
+      // Verificar si todos los partidos directos están disponibles
+      const totalPartidosEsperados = (equiposEmpatados.length * (equiposEmpatados.length - 1)) / 2;
+      let partidosDirectosDisponibles = 0;
+      for (let x = 0; x < equiposEmpatados.length; x++) {
+        for (let y = x + 1; y < equiposEmpatados.length; y++) {
+          const a = equiposEmpatados[x], b = equiposEmpatados[y];
+          if (directos[`${a}vs${b}`] || directos[`${b}vs${a}`]) partidosDirectosDisponibles++;
+        }
+      }
+
+      const tieneTodosDirectos = partidosDirectosDisponibles === totalPartidosEsperados;
+
+      grupo.sort((a, b) => {
+        if (tieneTodosDirectos) {
+          // Criterios directos primero (FIFA)
+          const dA = ds[a.equipo], dB = ds[b.equipo];
+          if (dB.pts !== dA.pts) return dB.pts - dA.pts;
+          if (dB.dg  !== dA.dg)  return dB.dg  - dA.dg;
+          if (dB.gf  !== dA.gf)  return dB.gf  - dA.gf;
+        }
+        // Luego diferencia de goles y goles a favor globales
+        if (b.dg !== a.dg) return b.dg - a.dg;
+        if (b.gf !== a.gf) return b.gf - a.gf;
+        return a.equipo.localeCompare(b.equipo);
+      });
+
+      result.push(...grupo);
+    }
+
+    i = j;
+  }
+
+  return result;
 }
 
 // ---- Clasificación de un grupo ----
@@ -182,7 +266,14 @@ export function scoreGrupoPositions(
     const predPos = playerPositions.find(p => p.puesto === puestoKey);
     const ptsPosicion = predPos?.equipo === stat.equipo ? 5 : 0;
 
-    const clasificaReal = pos <= 2 || (pos === 3 && clasificanSet.has(stat.equipo));
+    // Si todos los grupos están completos, usamos el ranking real de los 8 mejores terceros.
+    // Si aún hay grupos sin terminar, cualquier equipo en 3ª posición puede clasificar:
+    // damos +3 a todos los terceros que el jugador pronosticó clasificar, sin filtrar
+    // por el ranking provisional (que sería injusto y arbitrario).
+    const clasificaReal = pos <= 2
+      || (pos === 3 && mejoresTerceros.completo && clasificanSet.has(stat.equipo))
+      || (pos === 3 && !mejoresTerceros.completo); // provisional: todos los terceros cuentan
+
     const clasificaIncierto = pos === 3 && !mejoresTerceros.completo;
 
     const predClasif = playerClasifDieciseisavos.includes(stat.equipo);
@@ -220,7 +311,11 @@ function recalcMejoresTercerosParaSim(
   }
 
   const nuevosTerceros = sortStanding([...tercerosOtros, { ...terceroSim, grupo }]);
-  const nuevosClasifican = nuevosTerceros.slice(0, 8);
+  // Si hay menos de 8 terceros disponibles (grupos incompletos), todos clasifican
+  // provisionalmente para que las proyecciones sean correctas
+  const nuevosClasifican = nuevosTerceros.length < 8
+    ? nuevosTerceros
+    : nuevosTerceros.slice(0, 8);
 
   return {
     terceros: nuevosTerceros,
@@ -238,6 +333,7 @@ export function bestWorstScenario(
   playerPositions: { puesto: string; equipo: string }[],
   playerClasifDieciseisavos: string[],
   playerMatches: { partido: string; pred: { local: number; visitante: number; signo: string } }[] = [],
+  realResults: RealResults = {},
 ): {
   mejor: { pts: number; standing: TeamStat[]; descripcion: string; desglose: string } | null;
   peor:  { pts: number; standing: TeamStat[]; descripcion: string; desglose: string } | null;
@@ -266,24 +362,20 @@ export function bestWorstScenario(
   }
 
   // Reconstruimos los resultados directos YA CONOCIDOS para este grupo
-  // a partir de los fixtures no pendientes
+  // usando realResults para que el desempate por enfrentamiento directo sea correcto.
   const pendientesIds = new Set(pendientes.map(p => p.partido));
   const equipos = currentStats.map(s => s.equipo);
   const grupoFixtures = ALL_FIXTURES.filter(
     f => equipos.includes(f.local) && equipos.includes(f.visitante)
   );
 
-  // Los directos conocidos los inferimos reconstruyendo el grupo desde currentStats.
-  // Como currentStats ya tiene los resultados acumulados, los directos los calculamos
-  // comparando los fixtures jugados. Para los que no están en pendientes,
-  // los marcamos como "jugados pero resultado desconocido" — usamos un enfoque
-  // más seguro: calculamos directos solo de los partidos simulados que añadimos.
+  // directosBase: todos los partidos ya jugados de este grupo (excluidos los pendientes)
   const directosBase: Record<string, { local: number; visitante: number }> = {};
-  // Nota: no podemos reconstruir los directos históricos sin el RealResults completo.
-  // Los directos de los partidos SIMULADOS sí los añadiremos en cada combo.
-  // Para el desempate en empate de puntos entre equipos cuyos directos
-  // ya están jugados, el orden en currentStats ya los refleja correctamente,
-  // así que clonar currentStats y solo añadir los simulados es suficiente.
+  for (const f of grupoFixtures) {
+    if (pendientesIds.has(f.partido)) continue; // se añadirá en cada combo
+    const r = realResults[f.partido];
+    if (r) directosBase[`${f.local}vs${f.visitante}`] = { local: r.local, visitante: r.visitante };
+  }
 
   let mejor: { pts: number; standing: TeamStat[]; descripcion: string; desglose: string } | null = null;
   let peor:  { pts: number; standing: TeamStat[]; descripcion: string; desglose: string } | null = null;
