@@ -358,55 +358,67 @@ function GroupView({
   }, [grupo, real, extra, standing.stats, standing.pendientes, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos, matches]);
 
   const simUltima = useMemo(() => {
-    if (!standing.stats || standing.stats.length === 0 || matches.length === 0 || standing.pendientes.length === 0) return null;
+    // Solo tiene sentido cuando el grupo ya cerró y el usuario NO acertó las posiciones exactas
+    if (!standing.stats || standing.stats.length === 0 || matches.length === 0 || standing.pendientes.length !== 0) return null;
 
+    // Si el usuario acertó todas las posiciones, no hay nada que "rescatar"
+    const rankingReal = standing.stats;
+    const pronosticoUsuario = player.posicion_grupos
+      .filter(p => p.puesto.includes(`GRUPO ${grupo}`))
+      .sort((a, b) => parseInt(a.puesto[0]) - parseInt(b.puesto[0]));
+    const posicionesAcertadas = rankingReal.filter((eq, idx) => pronosticoUsuario[idx]?.equipo === eq.equipo).length;
+    if (posicionesAcertadas === 4) return null; // ya las acertó todas, no hay qué mostrar
+
+    // Objetivo: encontrar el standing que el usuario pronosticó
+    const standingObjetivo = pronosticoUsuario.map(p => p.equipo);
+
+    // Probar TODOS los partidos del grupo con todas las combinaciones de resultado
     const jugadosConResultados = matches.filter(m => real[m.partido]);
     if (jugadosConResultados.length === 0) return null;
-    
-    const ultimoMatch = jugadosConResultados[jugadosConResultados.length - 1];
-    const resultadoReal = real[ultimoMatch.partido]!;
-    const ptsActual = scorePos.total;
 
     const candidatos = [
-      { local: 1, visitante: 0, desc: `gana ${ultimoMatch.local}` },
-      { local: 0, visitante: 0, desc: `empate` },
-      { local: 0, visitante: 1, desc: `gana ${ultimoMatch.visitante}` },
+      { local: 1, visitante: 0 },
+      { local: 0, visitante: 0 },
+      { local: 0, visitante: 1 },
     ];
 
-    let mejorAlternativo: any = null;
+    let mejorCoincidencia: any = null;
+    let maxCoincidencias = posicionesAcertadas; // solo mostramos si mejora lo actual
 
-    for (const res of candidatos) {
-      const esReal = Math.sign(res.local - res.visitante) === Math.sign(resultadoReal.local - resultadoReal.visitante);
-      if (esReal) continue;
+    for (const partido of jugadosConResultados) {
+      const resultadoReal = real[partido.partido]!;
+      const signReal = Math.sign(resultadoReal.local - resultadoReal.visitante);
 
-      const simReal: RealResults = { ...real, [ultimoMatch.partido]: { local: res.local, visitante: res.visitante } };
-      const stSim = calcGrupoStanding(grupo, simReal);
-      
-      const guardadas: string[] = [];
-      for (let r = 1; r <= 4; r++) {
-        const v = extra[normPos(`${r}º GRUPO ${grupo}`)];
-        if (typeof v === "string" && v) guardadas.push(v);
-      }
-      if (guardadas.length === 4) {
-        stSim.stats.sort((a, b) => guardadas.indexOf(a.equipo) - guardadas.indexOf(b.equipo));
-      }
+      for (const res of candidatos) {
+        if (Math.sign(res.local - res.visitante) === signReal) continue; // mismo resultado, saltar
 
-      const scoreSimulado = scoreGrupoPositions(grupo, stSim.stats, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos);
+        const simReal: RealResults = { ...real, [partido.partido]: { local: res.local, visitante: res.visitante } };
+        const stSim = calcGrupoStanding(grupo, simReal);
 
-      if (!mejorAlternativo || scoreSimulado.total > mejorAlternativo.pts) {
-        mejorAlternativo = { pts: scoreSimulado.total, standing: stSim.stats, descripcion: res.desc };
+        // Contar cuántas posiciones coinciden con el pronóstico del usuario
+        const coincidencias = stSim.stats.filter((eq, idx) => standingObjetivo[idx] === eq.equipo).length;
+
+        if (coincidencias > maxCoincidencias) {
+          maxCoincidencias = coincidencias;
+          const desc = Math.sign(res.local - res.visitante) > 0
+            ? `gana ${partido.local}`
+            : Math.sign(res.local - res.visitante) < 0
+            ? `gana ${partido.visitante}`
+            : `empate`;
+          mejorCoincidencia = {
+            partido: { local: partido.local, visitante: partido.visitante },
+            resultadoReal,
+            descripcion: desc,
+            standingHipotetico: stSim.stats,
+            coincidencias,
+          };
+        }
       }
     }
 
-    if (!mejorAlternativo || mejorAlternativo.pts <= ptsActual) return null;
-
-    return { 
-      mejorAlternativo, 
-      ptsActual, 
-      partido: { local: ultimoMatch.local, visitante: ultimoMatch.visitante }, 
-      resultadoReal 
-    };
-  }, [grupo, real, extra, standing.stats, mejoresTerceros, player.posicion_grupos, player.clasif_dieciseisavos, matches, scorePos.total, standing.pendientes.length]);
+    if (!mejorCoincidencia) return null;
+    return { ...mejorCoincidencia, posicionesActuales: posicionesAcertadas };
+  }, [grupo, real, standing.stats, standing.pendientes.length, matches, player.posicion_grupos]);
 
 // Análisis Cruel Post-Grupo (Cuando pendientes === 0) TOTALMENTE REDISEÑADO CON SENTIDO COMÚN
   const analisisCruelFinal = useMemo(() => {
@@ -459,9 +471,22 @@ function GroupView({
       return { nombre: p.nombre, total: sPos.total + ptsP, id: p.id };
     }).sort((a, b) => b.total - a.total);
 
+    const miPuntos = rankingGrupoRivales.find(r => r.id === player.id)?.total ?? 0;
     const miPuestoEnGrupo = rankingGrupoRivales.findIndex(r => r.id === player.id) + 1;
     const totalRivales = rankingGrupoRivales.length;
-    const esUltimo = miPuestoEnGrupo === totalRivales;
+
+    // Detectar empates en cabeza y en cola
+    const puntosLider = rankingGrupoRivales[0]?.total ?? 0;
+    const puntosColista = rankingGrupoRivales[totalRivales - 1]?.total ?? 0;
+    const empataLider = miPuntos === puntosLider && miPuestoEnGrupo > 1;
+    const empataColista = miPuntos === puntosColista && miPuestoEnGrupo < totalRivales;
+    const esLiderSolitario = miPuestoEnGrupo === 1 && !empataLider;
+    const esUltimoSolitario = miPuestoEnGrupo === totalRivales && !empataColista;
+    const esUltimo = miPuestoEnGrupo === totalRivales; // incluye empate
+
+    // Cuántos comparten la misma puntuación arriba/abajo
+    const empatadosArriba = rankingGrupoRivales.filter(r => r.total === puntosLider);
+    const empatadosAbajo = rankingGrupoRivales.filter(r => r.total === puntosColista);
 
     const mejorDeTodos = rankingGrupoRivales[0];
     const peorDeTodos = rankingGrupoRivales[totalRivales - 1];
@@ -470,21 +495,28 @@ function GroupView({
     // BLOQUE 1: RENDIMIENTO HISTÓRICO (GLOBAL)
     // ==========================================
     let veredictoGlobal = "";
-    
-    if (miPuestoEnGrupo === 1) {
+
+    if (esLiderSolitario) {
       if (posicionesClavadas >= 3) {
-        veredictoGlobal = `Lideras el Grupo ${grupo} por pura mente analítica. Tu lectura de las posiciones finales fue perfecta (${posicionesClavadas} de 4). Los marcadores exactos te dieron un poco igual (metiste ${partidosClavados}), dominaste el destino del grupo.`;
+        veredictoGlobal = `Lideras el Grupo ${grupo} en solitario por pura mente analítica. Tu lectura de las posiciones finales fue perfecta (${posicionesClavadas} de 4). Los marcadores exactos te dieron un poco igual (metiste ${partidosClavados}), dominaste el destino del grupo.`;
       } else {
-        veredictoGlobal = `Estás en la cima gracias a tu brutal pegada con los marcadores. Clavaste ${partidosClavados} resultados exactos y, aunque la tabla final te quedó algo caótica con ${posicionesClavadas} posiciones correctas, tu puntería te corona como líder absoluto.`;
+        veredictoGlobal = `Estás en la cima en solitario gracias a tu brutal pegada con los marcadores. Clavaste ${partidosClavados} resultados exactos y, aunque la tabla final te quedó algo caótica con ${posicionesClavadas} posiciones correctas, tu puntería te corona como líder absoluto.`;
       }
-    } 
+    } else if (empataLider) {
+      const rivalesEmpate = empatadosArriba.filter(r => r.id !== player.id).map(r => r.nombre).join(" y ");
+      if (posicionesClavadas >= 3) {
+        veredictoGlobal = `Empatas en cabeza del Grupo ${grupo} con ${rivalesEmpate} a ${miPuntos} pts. Los dos lo habéis clavado bien: leíste la tabla con ${posicionesClavadas} de 4 posiciones, y ellos también tuvieron su momento. El mérito es compartido, que es lo que hay.`;
+      } else {
+        veredictoGlobal = `Empatas en lo más alto del Grupo ${grupo} con ${rivalesEmpate} a ${miPuntos} pts. Distinto camino, mismo destino: tú con ${partidosClavados} marcadores exactos, ellos con los suyos. Nadie se lleva la corona entera pero tampoco se la merece más el otro.`;
+      }
+    }
     else if (miPuestoEnGrupo === 2 || miPuestoEnGrupo === 3) {
       if (posicionesClavadas >= 3) {
         veredictoGlobal = `Excelente lectura estratégica. Clavaste casi toda la tabla de posiciones (${posicionesClavadas} de 4). Te ha faltado rascar más que tus ${partidosClavados} marcadores exactos para quitarle el liderato a ${mejorDeTodos.nombre}, pero tu base es impecable.`;
       } else {
         veredictoGlobal = `Estás en el podio gracias a tus fogonazos de genialidad: esos ${partidosClavados} marcadores exactos te sostienen arriba, compensando una tabla de posiciones donde solo rescataste ${posicionesClavadas} equipos exactos.`;
       }
-    } 
+    }
     else if (!esUltimo && miPuestoEnGrupo <= 6) { // Zona Media
       if (posicionesClavadas >= 3) {
         veredictoGlobal = `Tiene mérito lo tuyo: eres un visionario teórico pero un desastre clínico. Has clavado ${posicionesClavadas} posiciones en la tabla, pero tu triste acierto de ${partidosClavados} marcadores exactos te condena a esta gris mitad de tabla. Sabías quién pasaba, pero no cómo jugaban.`;
@@ -493,8 +525,16 @@ function GroupView({
       } else {
         veredictoGlobal = `Sumaste lo justo para sobrevivir en tierra de nadie. Metiste ${partidosClavados} resultados exactos, pero tu lectura general del grupo fue tan floja que con solo ${posicionesClavadas} posiciones atinadas estos chispazos no lucen.`;
       }
-    } 
-    else { // Pozo y Colistas
+    }
+    else if (empataColista) {
+      const rivalesColaEmpate = empatadosAbajo.filter(r => r.id !== player.id).map(r => r.nombre).join(" y ");
+      if (partidosClavados === 0) {
+        veredictoGlobal = `Compartes el fondo del Grupo ${grupo} con ${rivalesColaEmpate}, todos a ${miPuntos} pts. Cero marcadores exactos y apenas ${posicionesClavadas} posiciones atinadas. El consuelo es que ${rivalesColaEmpate} tampoco lo hizo mejor: miseria repartida a partes iguales.`;
+      } else {
+        veredictoGlobal = `Empatas en el sótano del Grupo ${grupo} con ${rivalesColaEmpate} a ${miPuntos} pts. Con ${partidosClavados} marcador(es) exacto(s) y ${posicionesClavadas} posiciones, ninguno de los que compartís fondo puede tirar la primera piedra. Una derrota colectiva.`;
+      }
+    }
+    else { // Pozo y Colista solitario
       if (posicionesClavadas >= 3) {
         veredictoGlobal = `La paradoja del fracaso: clavaste una barbaridad de la tabla (${posicionesClavadas} posiciones de 4), pero el colapso absoluto de tus porras de partidos con solo ${partidosClavados} exactos ha sido tan dantesco que te has ido al subsuelo.`;
       } else if (partidosClavados === 0) {
@@ -505,23 +545,155 @@ function GroupView({
     }
 
     // ==========================================
-    // BLOQUE 2 CORREGIDO: RESUMEN DE LA JORNADA J3 (CON SENTIDO COMÚN)
+    // BLOQUE 2: CÓMO TE FUE EN LA JORNADA FINAL (J3)
     // ==========================================
+    // BLOQUE 2: CÓMO TE FUE EN LA JORNADA FINAL (J3)
+    // Eje principal: puntos de POSICIONES antes vs después de la J3.
+    // La J3 reordena el grupo → eso cambia scorePos.
+    // Calculamos el standing sin J3 (solo con J1+J2) y comparamos con el real.
+    // ==========================================
+    const partidosJ3 = matches.slice(-2);
+    const partidosJ1J2 = matches.slice(0, -2);
+
+    // Standing del grupo SIN los partidos de J3 (solo con J1+J2 jugados)
+    const realSinJ3: typeof real = { ...real };
+    partidosJ3.forEach(m => { delete realSinJ3[m.partido]; });
+    const standingSinJ3 = calcGrupoStanding(grupo, realSinJ3);
+    const scorePosAntes = scoreGrupoPositions(
+      grupo, standingSinJ3.stats, mejoresTerceros,
+      player.posicion_grupos, player.clasif_dieciseisavos
+    );
+
+    // Standing real (con J3 ya jugada) — scorePos ya existe
+    const scorePosReal = scorePos.total;
+
+    // Diferencia de pts de posiciones que aportó (o quitó) la J3
+    const difPosJ3 = scorePosReal - scorePosAntes.total;
+
+    // Puntos reales en los partidos de J3
+    let ptsJ3 = 0;
+    partidosJ3.forEach(m => {
+      const r = real[m.partido];
+      if (r) ptsJ3 += scoreMatch(m.pred, r, GRUPO_PTS).pts;
+    });
+
+    // Máximo posible en partidos J3: simulando acierto exacto del pronóstico
+    let maxPtsJ3 = 0;
+    partidosJ3.forEach(m => {
+      maxPtsJ3 += scoreMatch(m.pred, { local: m.pred.local, visitante: m.pred.visitante }, GRUPO_PTS).pts;
+    });
+    if (maxPtsJ3 === 0) maxPtsJ3 = partidosJ3.length * 6;
+
+    // Umbrales absolutos: >6 pts = increible, 5-6 = bien, 4 = decente, <4 = mal
+    const J3_INCREIBLE = ptsJ3 >= 7;
+    const J3_BIEN      = ptsJ3 >= 5 && ptsJ3 <= 6;
+    const J3_DECENTE   = ptsJ3 === 4;
+    const J3_MAL       = ptsJ3 < 4;
+    const J3_POSITIVO  = ptsJ3 >= 5; // bien o increible
+    const J3_ACEPTABLE = ptsJ3 >= 4; // decente o mejor
+
+    // Clasificación de la J3 según diferencia de pts de posiciones:
+    //  +4 o más  → increíble (la J3 ordenó el grupo como querías o mejor)
+    //  +1 a +3   → buena
+    //   0        → neutral (no movió posiciones)
+    //  -1 a -3   → mala
+    //  -4 o menos→ catastrófica
+
+    const ptidosJ3Label = `${ptsJ3} de ${maxPtsJ3} pts en los partidos`;
+
+    // Nivel de posiciones antes de J3: cuantifica si el escenario previo era bueno o malo
+    // Usamos scorePosAntes.total como referencia de contexto en todos los mensajes
+    const nivelPrevio = scorePosAntes.total;
+    const nivelPrevioDesc = nivelPrevio >= 20
+      ? `muy buena posición (${nivelPrevio} pts en tabla antes de la J3)`
+      : nivelPrevio >= 12
+      ? `posición decente (${nivelPrevio} pts en tabla antes de la J3)`
+      : `posición floja (${nivelPrevio} pts en tabla antes de la J3)`;
+
     let veredictoJ3 = "";
 
-    if (posicionesClavadas === 0) {
-      veredictoJ3 = `La jornada final simultánea te desintegró por completo. Clavaste la asombrosa cantidad de 0 posiciones reales en la tabla. El caos de los minutos finales borró tu estrategia del mapa, dejándote solo con ${partidosClavados} marcadores perfectos.`;
-    } else if (posicionesClavadas >= 3) {
-      veredictoJ3 = `La última jornada a la vez demostró que leías bien el futuro de la tabla con ${posicionesClavadas} posiciones perfectas, pero el vaivén de los goles y tus discretos ${partidosClavados} aciertos en porras congelaron tu ascenso.`;
-    } else {
-      // Casos intermedios (1 o 2 posiciones exactas)
-      if (partidosClavados > 0) {
-        // NUEVO: Caso donde compensas la tabla con marcadores exactos brutales
-        veredictoJ3 = `Salvaste los muebles en el último segundo. Aunque la tabla final se te resistió con apenas ${posicionesClavadas} posiciones exactas, tu tremenda puntería con ${partidosClavados} marcador(es) exacto(s) en las porras amortiguó el golpe y evitó el desastre.`;
-      } else if (esUltimo || miPuestoEnGrupo >= 7) {
-        veredictoJ3 = `La jornada final simultánea fue una agonía televisada en directo hacia el fondo. Conseguiste amarrar apenas ${posicionesClavadas} posiciones exactas en la tabla, una renta ridícula que junto a tus ${partidosClavados} plenos de goles te sepultó.`;
+    // Calidad descriptiva de los partidos J3 en texto
+    const calidad_partidos = J3_INCREIBLE ? `increíble (${ptidosJ3Label})`
+      : J3_BIEN    ? `buena (${ptidosJ3Label})`
+      : J3_DECENTE ? `decente (${ptidosJ3Label})`
+      : `floja (${ptidosJ3Label})`;
+
+    if (difPosJ3 >= 4) {
+      // INCREÍBLE en posiciones
+      if (J3_POSITIVO) {
+        veredictoJ3 = `Jornada final de escándalo: partías con ${nivelPrevioDesc} y la simultánea te sumó otros +${difPosJ3} pts de posiciones. Encima la actuación en los partidos fue ${calidad_partidos}. La J3 fue redonda.`;
       } else {
-        veredictoJ3 = `La última jornada simultánea te dejó a medias. Acertaste apenas ${posicionesClavadas} posiciones exactas en la tabla de posiciones, lo justo para amortiguar el golpe pero insuficiente para salir de la zona gris.`;
+        veredictoJ3 = `La jornada final te regaló lo que importa en posiciones: partías con ${nivelPrevioDesc} y la simultánea te dio +${difPosJ3} pts más de tabla. En los partidos la actuación fue ${calidad_partidos}, pero la clasificación lo compensó de sobra.`;
+      }
+    } else if (difPosJ3 >= 1) {
+      // BUENA en posiciones
+      if (J3_POSITIVO) {
+        veredictoJ3 = `Buena jornada final: llegabas con ${nivelPrevioDesc} y la simultánea añadió +${difPosJ3} pts de posiciones más. En los partidos la actuación fue ${calidad_partidos}. La J3 empujó por los dos lados.`;
+      } else {
+        veredictoJ3 = `Jornada final aceptable: llegabas con ${nivelPrevioDesc} y la clasificación del grupo te dio +${difPosJ3} pts más de posiciones. En los partidos la actuación fue ${calidad_partidos}. La tabla compensó donde los marcadores fallaron.`;
+      }
+    } else if (difPosJ3 === 0) {
+      // NEUTRAL en posiciones — el contexto previo da el tono
+      if (nivelPrevio >= 20) {
+        if (J3_POSITIVO) {
+          veredictoJ3 = `La simultánea no movió las posiciones — pero llegabas con ${nivelPrevio} pts de tabla, así que mantenerlos ya es positivo. Además la actuación en los partidos fue ${calidad_partidos}. Jornada final sólida.`;
+        } else if (J3_ACEPTABLE) {
+          veredictoJ3 = `La simultánea no cambió las posiciones del grupo, lo que con ${nivelPrevio} pts de tabla previos es un buen resultado. En los partidos la actuación fue ${calidad_partidos}. Lo importante se mantuvo.`;
+        } else {
+          veredictoJ3 = `La simultánea mantuvo las posiciones (${nivelPrevio} pts de tabla, sin cambios), pero en los partidos la actuación fue ${calidad_partidos}. Jornada final conservadora: la tabla aguantó, los partidos no.`;
+        }
+      } else if (nivelPrevio >= 12) {
+        if (J3_POSITIVO) {
+          veredictoJ3 = `La J3 no movió las posiciones (te quedas con los ${nivelPrevio} pts de tabla que ya tenías), pero en los partidos la actuación fue ${calidad_partidos}. Una jornada final plana en tabla, salvada algo por los partidos.`;
+        } else if (J3_ACEPTABLE) {
+          veredictoJ3 = `Jornada final anodina: la simultánea no cambió las posiciones del grupo (${nivelPrevio} pts de tabla, igual que antes) y en los partidos la actuación fue ${calidad_partidos}. La J3 pasó sin pena ni gloria.`;
+        } else {
+          veredictoJ3 = `Jornada final gris: sin cambios en posiciones (${nivelPrevio} pts de tabla) y en los partidos la actuación fue ${calidad_partidos}. La J3 no aportó nada en ningún frente.`;
+        }
+      } else {
+        if (J3_ACEPTABLE) {
+          veredictoJ3 = `La J3 no cambió las posiciones del grupo — y con solo ${nivelPrevio} pts de tabla previos, que no mejorara duele. En los partidos la actuación fue ${calidad_partidos}, que es lo poco que hay para rescatar.`;
+        } else {
+          veredictoJ3 = `La jornada final no aportó nada en posiciones — con ${nivelPrevio} pts de tabla era cuando más se necesitaba un cambio. En los partidos la actuación fue ${calidad_partidos}. Una J3 para olvidar.`;
+        }
+      }
+    } else if (difPosJ3 >= -3) {
+      // MALA en posiciones
+      if (nivelPrevio >= 20) {
+        if (J3_POSITIVO) {
+          veredictoJ3 = `Jornada final agridulce: llegabas con ${nivelPrevio} pts de tabla y la simultánea te quitó ${Math.abs(difPosJ3)} pts de posiciones. En los partidos la actuación fue ${calidad_partidos}, que amortigua el golpe. Duele perder lo que tenías.`;
+        } else if (J3_ACEPTABLE) {
+          veredictoJ3 = `Jornada final regular: tenías ${nivelPrevio} pts de tabla y la simultánea te los recortó en ${Math.abs(difPosJ3)}. En los partidos la actuación fue ${calidad_partidos}. La J3 te hizo daño en la tabla sin mucha compensación.`;
+        } else {
+          veredictoJ3 = `Mala jornada final: tenías ${nivelPrevio} pts de tabla y la simultánea te los recortó en ${Math.abs(difPosJ3)}. En los partidos la actuación fue ${calidad_partidos}. La J3 te hizo daño cuando más tenías que perder.`;
+        }
+      } else {
+        if (J3_POSITIVO) {
+          veredictoJ3 = `Jornada final agridulce: la simultánea te costó ${Math.abs(difPosJ3)} pts de posiciones aunque en los partidos la actuación fue ${calidad_partidos}. Con los ${nivelPrevio} pts de tabla que llevabas, perder posiciones en J3 duele el doble.`;
+        } else if (J3_ACEPTABLE) {
+          veredictoJ3 = `Jornada final regular: ${Math.abs(difPosJ3)} pts de posiciones perdidos en la simultánea y en los partidos la actuación fue ${calidad_partidos}. Partías con ${nivelPrevio} pts de tabla y la J3 no hizo más que empeorar el panorama.`;
+        } else {
+          veredictoJ3 = `Mala jornada final: ${Math.abs(difPosJ3)} pts de posiciones perdidos en la simultánea y en los partidos la actuación fue ${calidad_partidos}. Partías con ${nivelPrevio} pts de tabla y la J3 apretó por los dos lados.`;
+        }
+      }
+    } else {
+      // CATASTRÓFICA en posiciones
+      if (nivelPrevio >= 20) {
+        if (J3_POSITIVO) {
+          veredictoJ3 = `Catástrofe en la jornada final: llegabas con ${nivelPrevio} pts de tabla y la simultánea te arrancó ${Math.abs(difPosJ3)} pts de posiciones. En los partidos la actuación fue ${calidad_partidos}, pero de nada sirvió. La J3 tiró por la borda lo que habías construido.`;
+        } else if (J3_ACEPTABLE) {
+          veredictoJ3 = `Jornada final devastadora: tenías ${nivelPrevio} pts de tabla y la simultánea se los llevó por delante quitándote ${Math.abs(difPosJ3)} pts de posiciones. En los partidos la actuación fue ${calidad_partidos}. La J3 fue un mazazo.`;
+        } else {
+          veredictoJ3 = `Debacle total en la jornada final: tenías ${nivelPrevio} pts de tabla construidos y la simultánea se los llevó por delante con ${Math.abs(difPosJ3)} pts de posiciones perdidos. En los partidos la actuación fue ${calidad_partidos}. La J3 fue un desastre en toda regla.`;
+        }
+      } else {
+        if (J3_POSITIVO) {
+          veredictoJ3 = `Jornada final catastrófica en posiciones: la simultánea te costó ${Math.abs(difPosJ3)} pts de posiciones. Con los apenas ${nivelPrevio} pts de tabla que llevabas, ese golpe es demoledor. En los partidos la actuación fue ${calidad_partidos}, pero no alcanzó para nada.`;
+        } else if (J3_ACEPTABLE) {
+          veredictoJ3 = `Jornada final muy mala: ${Math.abs(difPosJ3)} pts de posiciones perdidos en la simultánea y en los partidos la actuación fue ${calidad_partidos}. Partías con ${nivelPrevio} pts de tabla y la J3 no dejó nada en pie.`;
+        } else {
+          veredictoJ3 = `Desastre total en la jornada final: ${Math.abs(difPosJ3)} pts de posiciones perdidos en la simultánea y en los partidos la actuación fue ${calidad_partidos}. Partías con ${nivelPrevio} pts de tabla — la J3 arrasó con todo.`;
+        }
       }
     }
 
@@ -529,19 +701,25 @@ function GroupView({
     // BLOQUE 3: HUMILLACIÓN COMPARATIVA (RIVALES)
     // ==========================================
     let veredictoRivales = "";
-    
-    if (miPuestoEnGrupo === 1) {
+
+    if (esLiderSolitario) {
       veredictoRivales = `Eres el Rey indiscutible del Grupo ${grupo}. Miras hacia abajo y solo ves un desierto de mediocridad. Que te limpien las boots antes de hablarte.`;
+    } else if (empataLider) {
+      const rivalesTop = empatadosArriba.filter(r => r.id !== player.id).map(r => r.nombre).join(", ");
+      veredictoRivales = `Compartes la cima del Grupo ${grupo} con ${rivalesTop}, todos a ${miPuntos} pts. Entre varios os repartís lo más alto — no hay liderato individual, pero tampoco hay nadie por encima de vosotros. Empate en la gloria.`;
     } else if (miPuestoEnGrupo === 2 || miPuestoEnGrupo === 3) {
       veredictoRivales = `Puesto ${miPuestoEnGrupo} de ${totalRivales}. Estás arriba, oliéndole el cuello a ${mejorDeTodos.nombre} y marcando una distancia sana con los desgraciados del fondo.`;
     } else if (!esUltimo && miPuestoEnGrupo <= 6) {
       veredictoRivales = `Estás en el puesto ${miPuestoEnGrupo} de ${totalRivales}. Enterrado vivo en la intrascendencia de la mitad de la tabla. Ni amenazas al líder ${mejorDeTodos.nombre}, ni das tanta risa como la desgracia de ${peorDeTodos.nombre}.`;
+    } else if (empataColista) {
+      const rivalesCol = empatadosAbajo.filter(r => r.id !== player.id).map(r => r.nombre).join(", ");
+      veredictoRivales = `Compartes el último puesto del Grupo ${grupo} con ${rivalesCol}, todos a ${miPuntos} pts. Nadie se salva: la vergüenza del fondo es de todos por igual. Al menos no estás solo en el agujero.`;
     } else {
-      veredictoRivales = `Puesto ${miPuestoEnGrupo} de ${totalRivales}. Estás en el subsuelo del Grupo ${grupo}. ${esUltimo ? `Eres oficialmente el bufón del grupo, vas ÚLTIMO.` : `Lo único que te salva de la humillación pública total es que ${peorDeTodos.nombre} está dando todavía más asco debajo de ti.`}`;
+      veredictoRivales = `Puesto ${miPuestoEnGrupo} de ${totalRivales}. Estás en el subsuelo del Grupo ${grupo}. Eres oficialmente el último en solitario. El bufón tiene nombre propio.`;
     }
 
     return { veredictoGlobal, veredictoJ3, veredictoRivales };
-  }, [standing.pendientes.length, mejor, peor, player, grupo, equipoGrupo, real, players, standing.stats, mejoresTerceros]);
+  }, [standing.pendientes.length, mejor, peor, player, grupo, equipoGrupo, real, players, standing.stats, mejoresTerceros, scorePos.total, puntosPartidosUsuario, matches]);
 
   const userPositions = useMemo(() => {
     return player.posicion_grupos
@@ -551,6 +729,35 @@ function GroupView({
 
   return (
     <div>
+      {/* ── TOTAL PUNTOS GRUPO (posiciones + partidos) ── */}
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        marginBottom: 12, padding: "10px 12px",
+        background: C.chalk, borderRadius: 8,
+        borderLeft: `4px solid ${C.ink}`,
+      }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: C.ink, letterSpacing: ".04em", textTransform: "uppercase" }}>
+          Total grupo {grupo} (tabla + partidos)
+        </span>
+        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: 20, color: totalPuntosGrupoUsuario > 0 ? C.pitch : C.muted }}>
+          {totalPuntosGrupoUsuario > 0 ? `+${totalPuntosGrupoUsuario}` : "0"} pts
+        </span>
+      </div>
+
+      {/* ── TOTAL POSICIONES GRUPO ── */}
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        marginBottom: 8, padding: "8px 0",
+        borderBottom: `2px solid ${C.line}`,
+      }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: ".04em", textTransform: "uppercase" }}>
+          Total posiciones grupo {grupo}
+        </span>
+        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: 18, color: scorePos.total > 0 ? C.pitch : C.muted }}>
+          {scorePos.total > 0 ? `+${scorePos.total}` : "0"} pts
+        </span>
+      </div>
+
       <div style={{ marginBottom: 12 }}>
         <div style={{
           fontSize: 9, fontWeight: 700, letterSpacing: ".08em",
@@ -672,58 +879,32 @@ function GroupView({
         })}
       </div>
 
+      {/* ── TOTAL PUNTOS PARTIDOS + LISTA DE PARTIDOS ── */}
       <div style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
-        marginBottom: 12, padding: "8px 0",
-        borderBottom: `2px solid ${C.line}`,
+        marginBottom: 8, padding: "8px 0",
+        borderTop: `2px solid ${C.line}`,
       }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: ".04em", textTransform: "uppercase" }}>
-          Total posiciones grupo {grupo}
+          Total puntos partidos grupo {grupo}
         </span>
-        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: 18, color: scorePos.total > 0 ? C.pitch : C.muted }}>
-          {scorePos.total > 0 ? `+${scorePos.total}` : "0"} pts
+        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: 18, color: puntosPartidosUsuario > 0 ? C.pitch : C.muted }}>
+          {puntosPartidosUsuario > 0 ? `+${puntosPartidosUsuario}` : "0"} pts
         </span>
       </div>
 
-      {simUltima && (
-        <div style={{
-          marginBottom: 16, padding: "10px 12px",
-          background: "rgba(184, 115, 51, 0.07)",
-          borderRadius: 6, border: `1px solid #B87333`,
-        }}>
-          <div style={{
-            fontSize: 9, fontWeight: 800, color: "#7A4A10",
-            marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em",
-          }}>
-            🔮 Si hubiera pasado otra cosa…
-          </div>
-          <div style={{ fontSize: 12, color: C.ink, lineHeight: "1.4" }}>
-            Si en{" "}
-            <strong>{simUltima.partido.local} – {simUltima.partido.visitante}</strong>
-            {" "}hubiera habido{" "}
-            <strong style={{ color: "#B87333" }}>{simUltima.mejorAlternativo.descripcion}</strong>
-            {" "}en vez de{" "}
-            <strong style={{ color: C.muted, fontFamily: "'DM Mono', monospace", fontSize: 11 }}>
-              {simUltima.resultadoReal.local}–{simUltima.resultadoReal.visitante}
-            </strong>
-            {", habrías sumado "}
-            <strong style={{ fontFamily: "'DM Mono', monospace", color: "#2E7D55" }}>
-              +{simUltima.mejorAlternativo.pts}
-            </strong>
-            {" pts en este grupo"}
-            {simUltima.ptsActual > 0 && (
-              <span style={{ color: C.muted }}>
-                {" "}(ahora tienes +{simUltima.ptsActual})
-              </span>
-            )}
-            .
-          </div>
-          <div style={{ fontSize: 10, color: C.muted, marginTop: 5 }}>
-            Clasificación hipotética:{" "}
-            {simUltima.mejorAlternativo.standing.map((s: any, i: number) => `${i + 1}º ${s.equipo}`).join(" · ")}
-          </div>
-        </div>
-      )}
+      <div style={{ marginBottom: 12 }}>
+        {matches.map((m, i) => {
+          const r = real[m.partido];
+          const s = r ? scoreMatch(m.pred, r, GRUPO_PTS) : null;
+          return (
+            <MatchRow key={i} local={m.local} visitante={m.visitante} pred={m.pred}
+              hit={s ? s.hit as Hit : null}
+              pts={s ? s.pts : null}
+            />
+          );
+        })}
+      </div>
 
       {/* ── ESCENARIOS ANTES DE QUE SE CIERREN LOS PARTIDOS ── */}
       {standing.pendientes.length > 0 && (mejor || peor) && (
@@ -877,18 +1058,57 @@ function GroupView({
         </div>
       )}
 
-      <div style={{ marginBottom: 12 }}>
-        {matches.map((m, i) => {
-          const r = real[m.partido];
-          const s = r ? scoreMatch(m.pred, r, GRUPO_PTS) : null;
-          return (
-            <MatchRow key={i} local={m.local} visitante={m.visitante} pred={m.pred}
-              hit={s ? s.hit as Hit : null}
-              pts={s ? s.pts : null}
-            />
-          );
-        })}
-      </div>
+      {/* ── SI HUBIERA PASADO OTRA COSA ── */}
+      {simUltima && (
+        <div style={{
+          marginBottom: 16, padding: "10px 12px",
+          background: "rgba(184, 115, 51, 0.07)",
+          borderRadius: 6, border: `1px solid #B87333`,
+        }}>
+          <div style={{
+            fontSize: 9, fontWeight: 800, color: "#7A4A10",
+            marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em",
+          }}>
+            🔮 Si hubiera pasado otra cosa…
+          </div>
+          <div style={{ fontSize: 12, color: C.ink, lineHeight: "1.6" }}>
+            {simUltima.coincidencias === 4 ? (
+              <>
+                Tenías la tabla del Grupo {grupo} perfectamente adivinada.
+                {" "}Si{" "}<strong>{simUltima.partido.local} – {simUltima.partido.visitante}</strong>{" "}
+                hubiera acabado con{" "}<strong style={{ color: "#B87333" }}>{simUltima.descripcion}</strong>{" "}
+                en lugar del{" "}
+                <strong style={{ color: C.muted, fontFamily: "'DM Mono', monospace", fontSize: 11 }}>
+                  {simUltima.resultadoReal.local}–{simUltima.resultadoReal.visitante}
+                </strong>
+                {", habrías clavado las 4 posiciones. Un solo resultado te robó la tabla entera."}
+              </>
+            ) : (
+              <>
+                {"Con "}
+                <strong style={{ color: "#B87333" }}>{simUltima.descripcion}</strong>
+                {" en "}
+                <strong>{simUltima.partido.local} – {simUltima.partido.visitante}</strong>
+                {" en lugar del "}
+                <strong style={{ color: C.muted, fontFamily: "'DM Mono', monospace", fontSize: 11 }}>
+                  {simUltima.resultadoReal.local}–{simUltima.resultadoReal.visitante}
+                </strong>
+                {", habrías acertado "}
+                <strong style={{ color: "#2E7D55" }}>{simUltima.coincidencias} de 4</strong>
+                {" posiciones — "}
+                {(simUltima.coincidencias - simUltima.posicionesActuales) === 1
+                  ? "una más de las que tienes ahora"
+                  : `${simUltima.coincidencias - simUltima.posicionesActuales} más de las que tienes ahora`
+                }.
+              </>
+            )}
+          </div>
+          <div style={{ fontSize: 10, color: C.muted, marginTop: 5 }}>
+            Clasificación hipotética:{" "}
+            {simUltima.standingHipotetico.map((s: any, i: number) => `${i + 1}º ${s.equipo}`).join(" · ")}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
