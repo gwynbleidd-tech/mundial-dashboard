@@ -215,19 +215,36 @@ function GroupView({
   // Calculamos los escenarios teóricos previos (usando los dos últimos partidos que corresponden a la J3)
   const { mejor, peor, escenarioIntermedio } = useMemo(() => {
     const partidosJ3 = matches.slice(-2);
-    
-    const pendientesParaScenarios = standing.pendientes.length > 0
-      ? standing.pendientes
-      : partidosJ3.map(m => ({ partido: m.partido, local: m.local, visitante: m.visitante, kickoff: "" }));
+
+    let pendientesParaScenarios: { partido: string; local: string; visitante: string; kickoff: string }[];
+    let statsParaScenarios: typeof standing.stats;
+    let realParaScenarios: RealResults;
+
+    if (standing.pendientes.length > 0) {
+      pendientesParaScenarios = standing.pendientes;
+      statsParaScenarios = standing.stats;
+      realParaScenarios = real;
+    } else {
+      // Grupo completo: reconstruimos el standing SIN J3 para evitar doble conteo
+      pendientesParaScenarios = partidosJ3.map(m => ({
+        partido: m.partido, local: m.local, visitante: m.visitante, kickoff: ""
+      }));
+      const realSinJ3: RealResults = { ...real };
+      partidosJ3.forEach(m => { delete realSinJ3[m.partido]; });
+      const stSinJ3 = calcGrupoStanding(grupo, realSinJ3);
+      statsParaScenarios = stSinJ3.stats;
+      realParaScenarios = realSinJ3;
+    }
 
     const baseScenarios = bestWorstScenario(
       grupo,
-      standing.stats,
+      statsParaScenarios,
       pendientesParaScenarios,
       mejoresTerceros,
       player.posicion_grupos,
       player.clasif_dieciseisavos,
-      matches
+      matches,
+      realParaScenarios
     );
 
     if (standing.pendientes.length === 0) {
@@ -778,6 +795,22 @@ function GroupView({
           const ptsClasif = det?.ptsClasif ?? 0;
           const ptsTotales = ptsPosicion + ptsClasif;
           const clasificaReal = det?.clasificaReal ?? false;
+          const clasificaIncierto = det?.clasificaIncierto ?? false;
+          const predijoClaif = player.clasif_dieciseisavos.includes(userPos.equipo);
+          const grupoCompleto = standing.pendientes.length === 0;
+          // 4 casos: predijo+clasificó, predijo+no clasificó, no predijo+clasificó, no predijo+no clasificó
+          const clasifLabel: { text: string; color: string; border: string; bg: string } | null = (() => {
+            if (!grupoCompleto) return null;
+            if (predijoClaif && clasificaReal)
+              return { text: "✓ CLASIF.", color: "#0B5A53", border: "#0D695E", bg: "rgba(13,105,94,0.07)" };
+            if (!predijoClaif && clasificaReal)
+              return { text: "✗ CLASIF.", color: "#B91C1C", border: "#EF4444", bg: "rgba(239,68,68,0.07)" };
+            if (predijoClaif && !clasificaReal)
+              return { text: "✗ NO CLASIF.", color: "#B91C1C", border: "#EF4444", bg: "rgba(239,68,68,0.07)" };
+            if (!predijoClaif && !clasificaReal && (det?.pos ?? 5) <= 3)
+              return { text: "✓ NO CLASIF.", color: "#6B7280", border: "#9CA3AF", bg: "rgba(156,163,175,0.07)" };
+            return null;
+          })();
 
           let rowBg: string = "transparent";
           let textColor: string = C.ink;
@@ -825,21 +858,22 @@ function GroupView({
                   {userPos.equipo}
                 </span>
 
-                {clasificaReal && (
+                {clasifLabel && (
                   <span style={{
                     fontSize: "9px",
                     fontWeight: 800,
-                    color: textColor === "#2E7D55" ? "#0B5A53" : "#7A4A10",
-                    backgroundColor: "#FAF8F2",
-                    border: `1.5px solid ${textColor === "#2E7D55" ? "#0D695E" : "#B87333"}`,
+                    color: clasifLabel.color,
+                    backgroundColor: clasifLabel.bg,
+                    border: `1.5px solid ${clasifLabel.border}`,
                     borderRadius: "4px",
                     padding: "1px 5px",
                     letterSpacing: "0.03em",
                     lineHeight: "1",
                     flexShrink: 0,
-                    boxShadow: "0px 1px 0px rgba(184, 115, 51, 0.15)"
+                    whiteSpace: "nowrap",
+                    boxShadow: "0px 1px 0px rgba(0,0,0,0.08)"
                   }}>
-                    CLASIF.
+                    {clasifLabel.text}
                   </span>
                 )}
               </div>
