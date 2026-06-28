@@ -1,629 +1,116 @@
 {
   "enfr_dieciseisavos": [
     {
-      "partido": "Argentina-Uruguay",
-      "local": "Argentina",
-      "visitante": "Uruguay",
-      "jugadores": [
-        "arroyo",
-        "borja",
-        "aldo",
-        "serra",
-        "jotha",
-        "martin",
-        "pecho",
-        "larios"
-      ]
-    },
-    {
-      "partido": "España-Austria",
-      "local": "España",
-      "visitante": "Austria",
-      "jugadores": [
-        "arroyo",
-        "borja",
-        "serra",
-        "jotha",
-        "martin",
-        "pecho",
-        "larios"
-      ]
-    },
-    {
-      "partido": "Colombia-Croacia",
-      "local": "Colombia",
-      "visitante": "Croacia",
-      "jugadores": [
-        "arroyo",
-        "borja",
-        "aldo",
-        "martin",
-        "pecho"
-      ]
-    },
-    {
-      "partido": "Países Bajos-Marruecos",
-      "local": "Países Bajos",
-      "visitante": "Marruecos",
-      "jugadores": [
-        "arroyo",
-        "serra",
-        "jotha",
-        "pecho",
-        "larios"
-      ]
-    },
-    {
-      "partido": "Portugal-Ghana",
-      "local": "Portugal",
-      "visitante": "Ghana",
-      "jugadores": [
-        "arroyo",
-        "borja",
-        "aldo",
-        "martin",
-        "pecho"
-      ]
-    },
-    {
-      "partido": "México-Costa de Marfil",
-      "local": "México",
-      "visitante": "Costa de Marfil",
-      "jugadores": [
-        "borja",
-        "aldo",
-        "serra",
-        "martin"
-      ]
-    },
-    {
-      "partido": "Brasil-Suecia",
-      "local": "Brasil",
-      "visitante": "Suecia",
-      "jugadores": [
-        "arroyo",
-        "pecho",
-        "larios"
-      ]
-    },
-    {
-      "partido": "Bélgica-República Checa",
-      "local": "Bélgica",
-      "visitante": "República Checa",
-      "jugadores": [
-        "serra",
-        "jotha",
-        "pecho"
-      ]
-    },
-    {
-      "partido": "Inglaterra-RD Congo",
-      "local": "Inglaterra",
-      "visitante": "RD Congo",
-      "jugadores": [
-        "borja",
-        "aldo",
-        "martin"
-      ]
-    },
-    {
-      "partido": "Inglaterra-Senegal",
-      "local": "Inglaterra",
-      "visitante": "Senegal",
-      "jugadores": [
-        "arroyo",
-        "serra",
-        "jotha"
-      ]
-    },
-    {
-      "partido": "República Checa-Canadá",
-      "local": "República Checa",
+      "partido": "Sudáfrica-Canadá",
+      "local": "Sudáfrica",
       "visitante": "Canadá",
-      "jugadores": [
-        "borja",
-        "aldo",
-        "martin"
-      ]
-    },
-    {
-      "partido": "Suiza-Argelia",
-      "local": "Suiza",
-      "visitante": "Argelia",
-      "jugadores": [
-        "arroyo",
-        "serra",
-        "pecho"
-      ]
-    },
-    {
-      "partido": "Alemania-Escocia",
-      "local": "Alemania",
-      "visitante": "Escocia",
-      "jugadores": [
-        "jotha",
-        "martin"
-      ]
+      "kickoff": "2026-06-28T21:00:00+02:00",
+      "jugadores": ["pecho"]
     },
     {
       "partido": "Brasil-Japón",
       "local": "Brasil",
       "visitante": "Japón",
-      "jugadores": [
-        "serra",
-        "jotha"
-      ]
-    },
-    {
-      "partido": "Brasil-Países Bajos",
-      "local": "Brasil",
-      "visitante": "Países Bajos",
-      "jugadores": [
-        "borja",
-        "martin"
-      ]
-    },
-    {
-      "partido": "Bélgica-Corea del Sur",
-      "local": "Bélgica",
-      "visitante": "Corea del Sur",
-      "jugadores": [
-        "arroyo",
-        "aldo"
-      ]
-    },
-    {
-      "partido": "Colombia-Ghana",
-      "local": "Colombia",
-      "visitante": "Ghana",
-      "jugadores": [
-        "serra",
-        "jotha"
-      ]
-    },
-    {
-      "partido": "Ecuador-Senegal",
-      "local": "Ecuador",
-      "visitante": "Senegal",
-      "jugadores": [
-        "borja",
-        "martin"
-      ]
-    },
-    {
-      "partido": "Estados Unidos-Bosnia y Herzegovina",
-      "local": "Estados Unidos",
-      "visitante": "Bosnia y Herzegovina",
-      "jugadores": [
-        "serra",
-        "larios"
-      ]
-    },
-    {
-      "partido": "Estados Unidos-Egipto",
-      "local": "Estados Unidos",
-      "visitante": "Egipto",
-      "jugadores": [
-        "aldo",
-        "martin"
-      ]
-    },
-    {
-      "partido": "Francia-Irán",
-      "local": "Francia",
-      "visitante": "Irán",
-      "jugadores": [
-        "serra",
-        "pecho"
-      ]
-    },
-    {
-      "partido": "Francia-Suecia",
-      "local": "Francia",
-      "visitante": "Suecia",
-      "jugadores": [
-        "borja",
-        "jotha"
-      ]
-    },
-    {
-      "partido": "Japón-Marruecos",
-      "local": "Japón",
-      "visitante": "Marruecos",
-      "jugadores": [
-        "borja",
-        "martin"
-      ]
-    },
-    {
-      "partido": "Portugal-Croacia",
-      "local": "Portugal",
-      "visitante": "Croacia",
-      "jugadores": [
-        "serra",
-        "jotha"
-      ]
-    },
-    {
-      "partido": "República Checa-Escocia",
-      "local": "República Checa",
-      "visitante": "Escocia",
-      "jugadores": [
-        "arroyo",
-        "larios"
-      ]
-    },
-    {
-      "partido": "Suiza-Irán",
-      "local": "Suiza",
-      "visitante": "Irán",
-      "jugadores": [
-        "borja",
-        "martin"
-      ]
-    },
-    {
-      "partido": "Turquía-Bosnia y Herzegovina",
-      "local": "Turquía",
-      "visitante": "Bosnia y Herzegovina",
-      "jugadores": [
-        "borja",
-        "martin"
-      ]
-    },
-    {
-      "partido": "Turquía-Egipto",
-      "local": "Turquía",
-      "visitante": "Egipto",
-      "jugadores": [
-        "serra",
-        "pecho"
-      ]
-    },
-    {
-      "partido": "Turquía-Irán",
-      "local": "Turquía",
-      "visitante": "Irán",
-      "jugadores": [
-        "arroyo",
-        "jotha"
-      ]
-    },
-    {
-      "partido": "Alemania-Japón",
-      "local": "Alemania",
-      "visitante": "Japón",
-      "jugadores": [
-        "arroyo"
-      ]
-    },
-    {
-      "partido": "Alemania-Noruega",
-      "local": "Alemania",
-      "visitante": "Noruega",
-      "jugadores": [
-        "pecho"
-      ]
+      "kickoff": "2026-06-29T19:00:00+02:00",
+      "jugadores": ["serra", "jotha"]
     },
     {
       "partido": "Alemania-Paraguay",
       "local": "Alemania",
       "visitante": "Paraguay",
-      "jugadores": [
-        "borja"
-      ]
+      "kickoff": "2026-06-29T22:30:00+02:00",
+      "jugadores": ["borja"]
     },
     {
-      "partido": "Alemania-Senegal",
-      "local": "Alemania",
-      "visitante": "Senegal",
-      "jugadores": [
-        "aldo"
-      ]
-    },
-    {
-      "partido": "Alemania-Suecia",
-      "local": "Alemania",
-      "visitante": "Suecia",
-      "jugadores": [
-        "serra"
-      ]
-    },
-    {
-      "partido": "Alemania-Turquía",
-      "local": "Alemania",
-      "visitante": "Turquía",
-      "jugadores": [
-        "larios"
-      ]
-    },
-    {
-      "partido": "Australia-Irán",
-      "local": "Australia",
-      "visitante": "Irán",
-      "jugadores": [
-        "larios"
-      ]
-    },
-    {
-      "partido": "Bosnia y Herzegovina-Austria",
-      "local": "Bosnia y Herzegovina",
-      "visitante": "Austria",
-      "jugadores": [
-        "aldo"
-      ]
-    },
-    {
-      "partido": "Bélgica-Arabia Saudita",
-      "local": "Bélgica",
-      "visitante": "Arabia Saudita",
-      "jugadores": [
-        "larios"
-      ]
-    },
-    {
-      "partido": "Bélgica-Noruega",
-      "local": "Bélgica",
-      "visitante": "Noruega",
-      "jugadores": [
-        "martin"
-      ]
-    },
-    {
-      "partido": "Canadá-Egipto",
-      "local": "Canadá",
-      "visitante": "Egipto",
-      "jugadores": [
-        "jotha"
-      ]
-    },
-    {
-      "partido": "Colombia-Inglaterra",
-      "local": "Colombia",
-      "visitante": "Inglaterra",
-      "jugadores": [
-        "larios"
-      ]
-    },
-    {
-      "partido": "Corea del Sur-Canadá",
-      "local": "Corea del Sur",
-      "visitante": "Canadá",
-      "jugadores": [
-        "serra"
-      ]
-    },
-    {
-      "partido": "Corea del Sur-Suiza",
-      "local": "Corea del Sur",
-      "visitante": "Suiza",
-      "jugadores": [
-        "jotha"
-      ]
-    },
-    {
-      "partido": "Costa de Marfil-Irak",
-      "local": "Costa de Marfil",
-      "visitante": "Irak",
-      "jugadores": [
-        "jotha"
-      ]
+      "partido": "Países Bajos-Marruecos",
+      "local": "Países Bajos",
+      "visitante": "Marruecos",
+      "kickoff": "2026-06-30T03:00:00+02:00",
+      "jugadores": ["arroyo", "serra", "jotha", "pecho", "larios"]
     },
     {
       "partido": "Costa de Marfil-Noruega",
       "local": "Costa de Marfil",
       "visitante": "Noruega",
-      "jugadores": [
-        "arroyo"
-      ]
+      "kickoff": "2026-06-30T19:00:00+02:00",
+      "jugadores": ["arroyo"]
     },
     {
-      "partido": "Costa de Marfil-Senegal",
-      "local": "Costa de Marfil",
-      "visitante": "Senegal",
-      "jugadores": [
-        "larios"
-      ]
+      "partido": "Francia-Suecia",
+      "local": "Francia",
+      "visitante": "Suecia",
+      "kickoff": "2026-06-30T23:00:00+02:00",
+      "jugadores": ["borja", "jotha"]
     },
     {
-      "partido": "Croacia-RD Congo",
-      "local": "Croacia",
-      "visitante": "RD Congo",
-      "jugadores": [
-        "larios"
-      ]
-    },
-    {
-      "partido": "Ecuador-Escocia",
-      "local": "Ecuador",
-      "visitante": "Escocia",
-      "jugadores": [
-        "aldo"
-      ]
-    },
-    {
-      "partido": "Ecuador-Estados Unidos",
-      "local": "Ecuador",
-      "visitante": "Estados Unidos",
-      "jugadores": [
-        "pecho"
-      ]
-    },
-    {
-      "partido": "Ecuador-Noruega",
-      "local": "Ecuador",
-      "visitante": "Noruega",
-      "jugadores": [
-        "serra"
-      ]
-    },
-    {
-      "partido": "Egipto-Noruega",
-      "local": "Egipto",
-      "visitante": "Noruega",
-      "jugadores": [
-        "borja"
-      ]
-    },
-    {
-      "partido": "España-Argelia",
-      "local": "España",
-      "visitante": "Argelia",
-      "jugadores": [
-        "aldo"
-      ]
-    },
-    {
-      "partido": "Estados Unidos-Bélgica",
-      "local": "Estados Unidos",
-      "visitante": "Bélgica",
-      "jugadores": [
-        "borja"
-      ]
-    },
-    {
-      "partido": "Estados Unidos-Canadá",
-      "local": "Estados Unidos",
-      "visitante": "Canadá",
-      "jugadores": [
-        "arroyo"
-      ]
-    },
-    {
-      "partido": "Estados Unidos-Ecuador",
-      "local": "Estados Unidos",
+      "partido": "México-Ecuador",
+      "local": "México",
       "visitante": "Ecuador",
-      "jugadores": [
-        "jotha"
-      ]
+      "kickoff": "2026-07-01T03:00:00+02:00",
+      "jugadores": []
     },
     {
-      "partido": "Francia-Arabia Saudita",
-      "local": "Francia",
-      "visitante": "Arabia Saudita",
-      "jugadores": [
-        "martin"
-      ]
-    },
-    {
-      "partido": "Francia-Egipto",
-      "local": "Francia",
-      "visitante": "Egipto",
-      "jugadores": [
-        "arroyo"
-      ]
-    },
-    {
-      "partido": "Francia-Japón",
-      "local": "Francia",
-      "visitante": "Japón",
-      "jugadores": [
-        "larios"
-      ]
-    },
-    {
-      "partido": "Francia-Paraguay",
-      "local": "Francia",
-      "visitante": "Paraguay",
-      "jugadores": [
-        "aldo"
-      ]
-    },
-    {
-      "partido": "Inglaterra-Costa de Marfil",
+      "partido": "Inglaterra-RD Congo",
       "local": "Inglaterra",
-      "visitante": "Costa de Marfil",
-      "jugadores": [
-        "pecho"
-      ]
+      "visitante": "RD Congo",
+      "kickoff": "2026-07-01T18:00:00+02:00",
+      "jugadores": ["borja", "aldo", "martin"]
     },
     {
-      "partido": "Japón-Brasil",
-      "local": "Japón",
-      "visitante": "Brasil",
-      "jugadores": [
-        "aldo"
-      ]
+      "partido": "Bélgica-Senegal",
+      "local": "Bélgica",
+      "visitante": "Senegal",
+      "kickoff": "2026-07-01T22:00:00+02:00",
+      "jugadores": []
     },
     {
-      "partido": "Marruecos-Países Bajos",
-      "local": "Marruecos",
-      "visitante": "Países Bajos",
-      "jugadores": [
-        "aldo"
-      ]
-    },
-    {
-      "partido": "México-Arabia Saudita",
-      "local": "México",
-      "visitante": "Arabia Saudita",
-      "jugadores": [
-        "pecho"
-      ]
-    },
-    {
-      "partido": "México-Bosnia y Herzegovina",
-      "local": "México",
+      "partido": "Estados Unidos-Bosnia y Herzegovina",
+      "local": "Estados Unidos",
       "visitante": "Bosnia y Herzegovina",
-      "jugadores": [
-        "arroyo"
-      ]
+      "kickoff": "2026-07-02T02:00:00+02:00",
+      "jugadores": ["serra", "larios"]
     },
     {
-      "partido": "México-Cabo Verde",
-      "local": "México",
-      "visitante": "Cabo Verde",
-      "jugadores": [
-        "jotha"
-      ]
+      "partido": "España-Austria",
+      "local": "España",
+      "visitante": "Austria",
+      "kickoff": "2026-07-02T21:00:00+02:00",
+      "jugadores": ["arroyo", "borja", "serra", "jotha", "martin", "pecho", "larios"]
     },
     {
-      "partido": "México-Canadá",
-      "local": "México",
-      "visitante": "Canadá",
-      "jugadores": [
-        "larios"
-      ]
-    },
-    {
-      "partido": "Paraguay-Bosnia y Herzegovina",
-      "local": "Paraguay",
-      "visitante": "Bosnia y Herzegovina",
-      "jugadores": [
-        "pecho"
-      ]
-    },
-    {
-      "partido": "Portugal-Noruega",
+      "partido": "Portugal-Croacia",
       "local": "Portugal",
-      "visitante": "Noruega",
-      "jugadores": [
-        "larios"
-      ]
+      "visitante": "Croacia",
+      "kickoff": "2026-07-03T01:00:00+02:00",
+      "jugadores": ["serra", "jotha"]
     },
     {
-      "partido": "Sudáfrica-Canadá",
-      "local": "Sudáfrica",
-      "visitante": "Canadá",
-      "jugadores": [
-        "pecho"
-      ]
-    },
-    {
-      "partido": "Suiza-Ecuador",
+      "partido": "Suiza-Argelia",
       "local": "Suiza",
-      "visitante": "Ecuador",
-      "jugadores": [
-        "larios"
-      ]
+      "visitante": "Argelia",
+      "kickoff": "2026-07-03T05:00:00+02:00",
+      "jugadores": ["arroyo", "serra", "pecho"]
     },
     {
-      "partido": "Turquía-Suiza",
-      "local": "Turquía",
-      "visitante": "Suiza",
-      "jugadores": [
-        "aldo"
-      ]
+      "partido": "Australia-Egipto",
+      "local": "Australia",
+      "visitante": "Egipto",
+      "kickoff": "2026-07-03T20:00:00+02:00",
+      "jugadores": []
+    },
+    {
+      "partido": "Argentina-Cabo Verde",
+      "local": "Argentina",
+      "visitante": "Cabo Verde",
+      "kickoff": "2026-07-04T00:00:00+02:00",
+      "jugadores": []
+    },
+    {
+      "partido": "Colombia-Ghana",
+      "local": "Colombia",
+      "visitante": "Ghana",
+      "kickoff": "2026-07-04T03:30:00+02:00",
+      "jugadores": ["serra", "jotha"]
     }
   ],
   "enfr_octavos": [

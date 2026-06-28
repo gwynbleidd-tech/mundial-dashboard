@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { Player, RealResults } from "@/lib/scoring";
+import type { Player, RealResults, Match, Pred } from "@/lib/scoring";
 import { scoreMatch, GRUPO_PTS } from "@/lib/scoring";
 import type { YoutubeUrls } from "@/lib/supabase";
 import horariosData from "@/data/horarios_grupos.json";
+import crusesData from "@/data/cruces_eliminatoria.json";
 import { C } from "@/lib/theme";
 
 // ---- tipos ----
@@ -17,6 +18,41 @@ interface Fixture {
 }
 const horarios = horariosData as Record<string, Fixture[]>;
 const DAYS = Object.keys(horarios).sort();
+
+type CruceReal = { partido: string; local: string; visitante: string; kickoff?: string; jugadores: string[] };
+const CRUCES = crusesData as Record<string, CruceReal[]>;
+
+const KO_PTS: Record<string, [number, number, number]> = {
+  dieciseisavos: [3, 2, 5],
+  octavos:       [3, 2, 5],
+  cuartos:       [4, 2, 6],
+  semis:         [6, 4, 10],
+  "3y4":         [10, 5, 15],
+  final:         [12, 6, 18],
+};
+
+const KO_RONDAS = [
+  { key: "dieciseisavos", label: "1/16"    },
+  { key: "octavos",       label: "Octavos" },
+  { key: "cuartos",       label: "Cuartos" },
+  { key: "semis",         label: "Semis"   },
+  { key: "3y4",           label: "3º/4º"  },
+  { key: "final",         label: "Final"   },
+] as const;
+
+type KoRondaKey = typeof KO_RONDAS[number]["key"];
+type Phase = "grupos" | "eliminatorias";
+
+const TODAY_ISO = new Date().toISOString().slice(0, 10);
+const DEFAULT_PHASE: Phase = TODAY_ISO >= "2026-06-28" ? "eliminatorias" : "grupos";
+
+function formatKoHora(kickoff: string): string {
+  return new Date(kickoff).toLocaleString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" });
+}
+
+function formatKoDia(kickoff: string): string {
+  return new Date(kickoff).toLocaleString("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "short" });
+}
 
 // ---- helpers de fecha/hora ----
 
@@ -120,7 +156,9 @@ interface Props {
 }
 
 export default function JornadaScreen({ players, real, youtube }: Props) {
+  const [phase, setPhase] = useState<Phase>(DEFAULT_PHASE);
   const [day, setDay] = useState<string>(getDefaultDay);
+  const [koRonda, setKoRonda] = useState<KoRondaKey>("dieciseisavos");
   const [open, setOpen] = useState<Set<string>>(() => new Set());
 
   const idx = DAYS.indexOf(day);
@@ -136,12 +174,39 @@ export default function JornadaScreen({ players, real, youtube }: Props) {
     });
   }
 
+  function switchPhase(p: Phase) {
+    setPhase(p);
+    setOpen(new Set());
+  }
+
   return (
     <div>
-      <h2 style={hStyle}>Por día</h2>
+      <h2 style={hStyle}>Calendario</h2>
+
+      {/* Toggle Grupos / Eliminatorias */}
+      <div style={{ display: "flex", gap: 6, marginTop: 14, marginBottom: 18 }}>
+        {(["grupos", "eliminatorias"] as const).map((p) => (
+          <button
+            key={p}
+            onClick={() => switchPhase(p)}
+            style={{
+              flex: 1, padding: "7px 0", borderRadius: 3, fontSize: 12, fontWeight: 700,
+              border: `1px solid ${phase === p ? C.ink : C.line}`,
+              background: phase === p ? C.ink : "transparent",
+              color: phase === p ? C.chalk : C.muted,
+              cursor: "pointer",
+            }}
+          >
+            {p === "grupos" ? "Fase de grupos" : "Eliminatorias"}
+          </button>
+        ))}
+      </div>
+
+      {/* ── FASE DE GRUPOS ── */}
+      {phase === "grupos" && (<>
 
       {/* Selector de día */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <button
           onClick={() => setDay(DAYS[idx - 1])}
           disabled={idx === 0}
@@ -350,6 +415,182 @@ export default function JornadaScreen({ players, real, youtube }: Props) {
           );
         })}
       </div>
+
+      </>)}
+
+      {/* ── ELIMINATORIAS ── */}
+      {phase === "eliminatorias" && (
+        <div>
+          {/* Selector de ronda */}
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 16 }}>
+            {KO_RONDAS.map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => { setKoRonda(key); setOpen(new Set()); }}
+                style={{
+                  padding: "5px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700,
+                  cursor: "pointer",
+                  border: `1px solid ${koRonda === key ? C.ink : C.line}`,
+                  background: koRonda === key ? C.ink : "transparent",
+                  color: koRonda === key ? C.chalk : C.muted,
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Lista de partidos KO */}
+          {(() => {
+            const cruces = CRUCES["enfr_" + koRonda] ?? [];
+            const esRondaFutura = koRonda !== "dieciseisavos" && !cruces.some((c) => real[c.partido]);
+            if (esRondaFutura) return (
+              <div style={{
+                textAlign: "center", padding: "48px 20px",
+                color: C.muted,
+              }}>
+                <div style={{ fontSize: 28, marginBottom: 12 }}>⏳</div>
+                <div style={{
+                  fontFamily: "'Anton', sans-serif", fontSize: 16,
+                  letterSpacing: ".06em", textTransform: "uppercase",
+                  color: C.muted, marginBottom: 6,
+                }}>
+                  Próximamente
+                </div>
+                <div style={{ fontSize: 12 }}>
+                  Los partidos de esta ronda aún no han comenzado
+                </div>
+              </div>
+            );
+            return (<div>
+            {cruces.map((cruce) => {
+              const r = real[cruce.partido];
+              const isOpen = open.has(cruce.partido);
+              const yt = youtube[cruce.partido];
+              const baremo = KO_PTS[koRonda];
+              const acertaron = cruce.jugadores.length;
+              const matchStatus = cruce.kickoff ? getMatchStatus(cruce.kickoff, !!r) : (r ? "finalizado" : "proximo");
+
+              return (
+                <div key={cruce.partido} style={{ borderBottom: `1px solid ${C.line}` }}>
+
+                  {/* Cabecera */}
+                  <button
+                    onClick={() => toggleFixture(cruce.partido)}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center",
+                      gap: 8, padding: "11px 2px",
+                      border: "none", background: "none", cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    {/* Hora + Día (columna izquierda, igual que fase de grupos) */}
+                    {cruce.kickoff && (
+                      <div style={{ flexShrink: 0, width: 40, fontFamily: "'DM Mono', monospace", color: C.muted, textAlign: "left" }}>
+                        <div style={{ fontSize: 12 }}>{formatKoHora(cruce.kickoff)}</div>
+                        <div style={{ fontSize: 10 }}>{formatKoDia(cruce.kickoff)}</div>
+                      </div>
+                    )}
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontWeight: 700, fontSize: 14, color: C.ink,
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      }}>
+                        {cruce.local} – {cruce.visitante}
+                      </div>
+                      <div style={{ fontSize: 10, color: C.muted, marginTop: 1 }}>
+                        {acertaron === 0 ? "Nadie acertó este cruce" : `${acertaron}/8 acertaron este cruce`}
+                      </div>
+                    </div>
+
+                    <span style={{ fontSize: 13, flexShrink: 0 }}>
+                      {matchStatus === "finalizado"
+                        ? <Score a={r!.local} b={r!.visitante} />
+                        : <StatusBadge status={matchStatus as "proximo" | "pendiente"} />}
+                    </span>
+
+                    {yt && (
+                      <a
+                        href={yt} target="_blank" rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Ver resumen"
+                        style={{ flexShrink: 0, fontSize: 15, color: C.rojo, textDecoration: "none", lineHeight: 1, padding: "2px 4px" }}
+                      >▶</a>
+                    )}
+
+                    <span style={{
+                      flexShrink: 0, fontSize: 12, color: C.muted,
+                      transform: isOpen ? "rotate(90deg)" : "none",
+                      transition: "transform .15s ease",
+                      display: "inline-block", width: 14, textAlign: "center",
+                    }}>›</span>
+                  </button>
+
+                  {/* Predicciones expandidas */}
+                  {isOpen && (
+                    <div style={{ paddingBottom: 8, paddingLeft: 8 }}>
+                      {players.map((p) => {
+                        const canScore = cruce.jugadores.includes(p.id);
+                        const predMatches = (p as unknown as Record<string, Match[]>)["enfr_" + koRonda] ?? [];
+                        const pred: Pred | null = canScore
+                          ? (predMatches.find((m) => m.partido === cruce.partido)?.pred ?? null)
+                          : null;
+                        const s = pred && r ? scoreMatch(pred, r, baremo) : null;
+                        const hit = s?.hit as "exacto" | "signo" | "fallo" | null ?? null;
+
+                        return (
+                          <div
+                            key={p.id}
+                            style={{
+                              display: "flex", alignItems: "center", gap: 10,
+                              padding: "3px 2px", borderBottom: `1px solid ${C.chalk}`,
+                            }}
+                          >
+                            <span style={{
+                              fontSize: 12, fontWeight: canScore ? 600 : 400,
+                              color: canScore ? C.ink : C.muted,
+                              width: 72, flexShrink: 0,
+                              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                            }}>
+                              {p.nombre.split(" ")[0]}
+                            </span>
+
+                            {pred ? (
+                              <>
+                                <span style={{
+                                  fontFamily: "'DM Mono', monospace", fontSize: 13,
+                                  color: hit ? HIT_COLOR[hit] : C.muted,
+                                  fontWeight: hit ? 600 : 400, flexShrink: 0,
+                                }}>
+                                  {pred.local}–{pred.visitante}
+                                </span>
+                                <span style={{
+                                  fontFamily: "'DM Mono', monospace", fontSize: 11,
+                                  color: s && s.pts > 0 ? C.pitch : C.line,
+                                  fontWeight: s && s.pts > 0 ? 700 : 400,
+                                  flexShrink: 0,
+                                }}>
+                                  {s ? `+${s.pts}` : "–"}
+                                </span>
+                              </>
+                            ) : (
+                              <span style={{ fontSize: 12, color: C.muted, fontStyle: "italic" }}>
+                                No acertó
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            </div>);
+          })()}
+        </div>
+      )}
     </div>
   );
 }
