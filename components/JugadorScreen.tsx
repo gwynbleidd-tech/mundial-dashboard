@@ -5,6 +5,7 @@ import type { Player, RealResults, RealExtra, Match, Breakdown } from "@/lib/sco
 import { scorePlayer, scoreMatch, GRUPO_PTS, normPos } from "@/lib/scoring";
 import { calcGrupoStanding, calcMejoresTerceros, scoreGrupoPositions, bestWorstScenario } from "@/lib/grupoStandings";
 import { C } from "@/lib/theme";
+import crusesData from "@/data/cruces_eliminatoria.json";
 
 // ---- interfaces ----
 
@@ -25,6 +26,14 @@ interface Props {
 // ---- constants ----
 
 const GRUPOS = ["A","B","C","D","E","F","G","H","I","J","K","L"] as const;
+
+type CruceReal = { partido: string; local: string; visitante: string; kickoff?: string; jugadores: string[] };
+const CRUCES_DATA = crusesData as Record<string, CruceReal[]>;
+
+const KO_BAREMO: Record<string, [number, number, number]> = {
+  dieciseisavos: [3, 2, 5], octavos: [3, 2, 5], cuartos: [4, 2, 6],
+  semis: [6, 4, 10], "3y4": [10, 5, 15], final: [12, 6, 18],
+};
 
 const KO_RONDAS = [
   { key: "dieciseisavos", label: "1/16 de final",   short: "1/16" },
@@ -75,23 +84,33 @@ function PredScore({ local, visitante }: { local: number; visitante: number }) {
 type Hit = "exacto" | "signo" | "fallo";
 
 function MatchRow({
-  local, visitante, pred, hit, pts,
+  local, visitante, pred, hit, pts, localClasif, visitanteClasif, acertoCruce,
 }: {
   local: string; visitante: string;
   pred: { local: number; visitante: number };
   hit?: Hit | null;
   pts?: number | null;
+  localClasif?: boolean;
+  visitanteClasif?: boolean;
+  acertoCruce?: boolean;
 }) {
+  const localColor  = acertoCruce ? "#2E8B57" : localClasif     ? "#B87333" : C.ink;
+  const visitColor  = acertoCruce ? "#2E8B57" : visitanteClasif ? "#B87333" : C.ink;
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 8,
-      padding: "6px 0", borderBottom: `1px solid ${C.chalk}`,
+      padding: "6px 4px", borderBottom: `1px solid ${C.chalk}`,
+      background: acertoCruce ? "rgba(46,139,87,0.07)" : "transparent",
+      borderRadius: acertoCruce ? 3 : 0,
+      marginBottom: acertoCruce ? 1 : 0,
     }}>
       <span style={{
-        flex: 1, fontSize: 13, color: C.ink,
+        flex: 1, fontSize: 13,
         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
       }}>
-        {local} <span style={{ color: C.muted }}>–</span> {visitante}
+        <span style={{ color: localColor, fontWeight: (localClasif || acertoCruce) ? 600 : 400 }}>{local}</span>
+        <span style={{ color: C.muted }}> – </span>
+        <span style={{ color: visitColor, fontWeight: (visitanteClasif || acertoCruce) ? 600 : 400 }}>{visitante}</span>
       </span>
       <PredScore local={pred.local} visitante={pred.visitante} />
       {pts !== undefined && (
@@ -1488,17 +1507,36 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
         </div>
 
         {(() => {
-          const matches = (player as unknown as Record<string, Match[]>)[`enfr_${rondaTab}`];
+          const koMatches = (player as unknown as Record<string, Match[]>)[`enfr_${rondaTab}`];
           const ronda = KO_RONDAS.find((r) => r.key === rondaTab);
+          const realCruces = CRUCES_DATA["enfr_" + rondaTab] ?? [];
+          const rondaTieneSorteoReal = realCruces.some(c => c.kickoff);
+          const realCruceLabels = new Set(realCruces.map(c => c.partido));
+          const realTeams = new Set(realCruces.flatMap(c => [c.local, c.visitante]));
+          const baremo = KO_BAREMO[rondaTab];
           return (
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: C.muted, marginBottom: 6 }}>
                 {ronda?.label}
               </div>
-              {matches?.length
-                ? matches.map((m, i) => (
-                    <MatchRow key={i} local={m.local} visitante={m.visitante} pred={m.pred} />
-                  ))
+              {koMatches?.length
+                ? koMatches.map((m, i) => {
+                    const r = real[m.partido];
+                    const s = r ? scoreMatch(m.pred, r, baremo) : null;
+                    const acertoCruce = rondaTieneSorteoReal && realCruceLabels.has(m.partido);
+                    const localClasif = rondaTieneSorteoReal && !acertoCruce && realTeams.has(m.local);
+                    const visitanteClasif = rondaTieneSorteoReal && !acertoCruce && realTeams.has(m.visitante);
+                    return (
+                      <MatchRow key={i}
+                        local={m.local} visitante={m.visitante} pred={m.pred}
+                        hit={s?.hit as Hit ?? null}
+                        pts={s?.pts ?? null}
+                        acertoCruce={acertoCruce}
+                        localClasif={localClasif}
+                        visitanteClasif={visitanteClasif}
+                      />
+                    );
+                  })
                 : <p style={{ color: C.muted, fontSize: 13 }}>Sin partidos</p>}
             </div>
           );
