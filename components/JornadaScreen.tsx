@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { Player, RealResults, Match, Pred } from "@/lib/scoring";
-import { scoreMatch, GRUPO_PTS } from "@/lib/scoring";
+import type { Player, RealResults, RealExtra, Match, Pred } from "@/lib/scoring";
+import { scoreMatch, GRUPO_PTS, CLASIF_PTS } from "@/lib/scoring";
 import type { YoutubeUrls } from "@/lib/supabase";
 import horariosData from "@/data/horarios_grupos.json";
 import crusesData from "@/data/cruces_eliminatoria.json";
@@ -42,6 +42,13 @@ const KO_RONDAS = [
 
 type KoRondaKey = typeof KO_RONDAS[number]["key"];
 type Phase = "grupos" | "eliminatorias";
+
+const NEXT_CLASIF_RONDA: Partial<Record<KoRondaKey, string>> = {
+  dieciseisavos: "octavos",
+  octavos:       "cuartos",
+  cuartos:       "semis",
+  semis:         "final",
+};
 
 const TODAY_ISO = new Date().toISOString().slice(0, 10);
 const DEFAULT_PHASE: Phase = TODAY_ISO >= "2026-06-28" ? "eliminatorias" : "grupos";
@@ -152,10 +159,11 @@ const btnBase: React.CSSProperties = {
 interface Props {
   players: Player[];
   real: RealResults;
+  extra: RealExtra;
   youtube: YoutubeUrls;
 }
 
-export default function JornadaScreen({ players, real, youtube }: Props) {
+export default function JornadaScreen({ players, real, extra, youtube }: Props) {
   const [phase, setPhase] = useState<Phase>(DEFAULT_PHASE);
   const [day, setDay] = useState<string>(getDefaultDay);
   const [koRonda, setKoRonda] = useState<KoRondaKey>("dieciseisavos");
@@ -539,6 +547,16 @@ export default function JornadaScreen({ players, real, youtube }: Props) {
                         const s = pred && r ? scoreMatch(pred, r, baremo) : null;
                         const hit = s?.hit as "exacto" | "signo" | "fallo" | null ?? null;
 
+                        // Indicador de clasificación a siguiente fase
+                        const nextRonda = NEXT_CLASIF_RONDA[koRonda];
+                        const playerClasifNext: string[] = nextRonda
+                          ? ((p as unknown as Record<string, string[]>)["clasif_" + nextRonda] ?? [])
+                          : [];
+                        const teamsFromMatch = [cruce.local, cruce.visitante].filter(t => playerClasifNext.includes(t));
+                        const actualNextClasif = nextRonda ? extra["clasif_" + nextRonda] : undefined;
+                        const clasifResolved = !!r && Array.isArray(actualNextClasif) && (actualNextClasif as string[]).length > 0;
+                        const nextPts = nextRonda ? (CLASIF_PTS[nextRonda] ?? 0) : 0;
+
                         return (
                           <div
                             key={p.id}
@@ -577,6 +595,34 @@ export default function JornadaScreen({ players, real, youtube }: Props) {
                             ) : (
                               <span style={{ fontSize: 12, color: C.muted, fontStyle: "italic" }}>
                                 No acertó
+                              </span>
+                            )}
+
+                            {/* Indicador de siguiente fase */}
+                            {teamsFromMatch.length > 0 && (
+                              <span style={{
+                                marginLeft: "auto", flexShrink: 0,
+                                display: "flex", gap: 5, whiteSpace: "nowrap", alignItems: "center",
+                              }}>
+                                {teamsFromMatch.map((team) => {
+                                  const isCorrect = clasifResolved && (actualNextClasif as string[]).includes(team);
+                                  const isMiss = clasifResolved && !(actualNextClasif as string[]).includes(team);
+                                  const color = isCorrect ? "#2E8B57" : isMiss ? C.rojo : C.muted;
+                                  return (
+                                    <span key={team} style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                                      <span style={{ fontSize: 12, color }}>{isCorrect ? "✓" : isMiss ? "✗" : "→"}</span>
+                                      <span style={{ fontSize: 12, fontStyle: "italic", color }}>{team}</span>
+                                      {isCorrect && (
+                                        <span style={{
+                                          fontFamily: "'DM Mono', monospace", fontSize: 11,
+                                          fontWeight: 700, color: C.pitch,
+                                        }}>
+                                          +{nextPts}
+                                        </span>
+                                      )}
+                                    </span>
+                                  );
+                                })}
                               </span>
                             )}
                           </div>

@@ -324,43 +324,28 @@ export default function ClasificacionScreen({ ranked, players, real, extra, load
                   )}
                 </div>
 
-                {/* Nombre + barra + insignias */}
+                {/* Nombre + insignias + barra */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
                     <span style={{ fontWeight: 700, fontSize: 16, color: nombreColor }}>
                       {r.player.nombre}
                     </span>
-                    {isPozo && (
-                      <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                        <img src="/clipeto/clipeto.svg" alt="" style={{ height: 14, width: "auto" }} />
-                        <span style={{ fontSize: 10, color: "#C47A7A", letterSpacing: ".02em" }}>
-                          This guy uses Clipeto
-                        </span>
+                    {(badgesByPlayer[r.player.id] ?? []).map(pb => (
+                      <span key={pb.badge.id} style={{ fontSize: 14, lineHeight: 1 }} title={pb.badge.name}>
+                        {pb.badge.emoji}
                       </span>
-                    )}
+                    ))}
                   </div>
-                  
-                  {/* Fila de la barra con ancho reservado para insignias */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
-                    <div style={{ flex: 1, height: 6, background: barBg, borderRadius: 3, overflow: "hidden" }}>
-                      <div style={{
-                        height: "100%",
-                        width: maxPts > 0 ? `${(r.score.total / maxPts) * 100}%` : "0%",
-                        background: isPozo ? "rgba(180,50,50,0.4)" : barColor(i),
-                        borderRadius: 3,
-                        transition: "width .4s ease",
-                        boxShadow: isPozo ? "0 0 4px rgba(180,50,50,0.25)" : "none",
-                      }} />
-                    </div>
-                    
-                    {/* Bloque fijo de 48px para evitar desajustes visuales en la barra */}
-                    <div style={{ width: 48, display: "flex", justifyContent: "flex-start", gap: 2, flexShrink: 0 }}>
-                      {(badgesByPlayer[r.player.id] ?? []).map(pb => (
-                        <span key={pb.badge.id} style={{ fontSize: 12, lineHeight: 1 }} title={pb.badge.name}>
-                          {pb.badge.emoji}
-                        </span>
-                      ))}
-                    </div>
+
+                  <div style={{ marginTop: 6, height: 6, background: barBg, borderRadius: 3, overflow: "hidden" }}>
+                    <div style={{
+                      height: "100%",
+                      width: maxPts > 0 ? `${(r.score.total / maxPts) * 100}%` : "0%",
+                      background: isPozo ? "rgba(180,50,50,0.4)" : barColor(i),
+                      borderRadius: 3,
+                      transition: "width .4s ease",
+                      boxShadow: isPozo ? "0 0 4px rgba(180,50,50,0.25)" : "none",
+                    }} />
                   </div>
                 </div>
 

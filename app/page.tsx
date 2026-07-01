@@ -124,7 +124,7 @@ export default function Home() {
             />
           )}
           {tab === "dia" && (
-            <JornadaScreen players={players} real={real} youtube={youtube} />
+            <JornadaScreen players={players} real={real} extra={extra} youtube={youtube} />
           )}
           {tab === "act" && <ActualidadScreen />}
           {tab === "jug" && (
