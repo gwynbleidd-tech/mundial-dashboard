@@ -3,7 +3,7 @@
  */
 
 import type { Player, RealResults, RealExtra } from "@/lib/scoring";
-import { scoreMatch, GRUPO_PTS, standings } from "@/lib/scoring";
+import { scoreMatch, GRUPO_PTS, KO_PTS, CLASIF_PTS, standings } from "@/lib/scoring";
 import horarios from "@/data/horarios_grupos.json";
 
 // ---- Tipos ----
@@ -25,21 +25,23 @@ export interface PlayerBadge {
 }
 
 // ---- Catálogo ----
-// Positivas priority 0..5: menor priority = más valiosa = en empate va al más alto clasificado
-// Negativas priority 6..9: mayor priority = más grave = en empate va al más bajo clasificado
-// Gafe (9) siempre al último
+// Positivas priority 0..6: menor priority = más valiosa = en empate va al más alto clasificado
+// Negativas priority 7..11: mayor priority = más grave = en empate va al más bajo clasificado
+// Gafe (11) siempre al último
 
 export const BADGES: Badge[] = [
-  { id: "quinielas",   emoji: "🎯", name: "Quinielas",    positive: true,  priority: 0, description: "El rey del signo. Adivina quién gana aunque no sepa el marcador ni de qué país es el equipo." },
-  { id: "visionario",  emoji: "🔮", name: "Visionario",   positive: true,  priority: 1, description: "No predice partidos, los recibe en sueños. Más exactos que el resto juntos." },
-  { id: "pelotazo",    emoji: "🎰", name: "Pelotazo",     positive: true,  priority: 2, description: "Acertó ese marcador rarísimo que nadie más vio venir. Suerte o genialidad, tú decides." },
-  { id: "cohete",      emoji: "🚀", name: "Cohete",       positive: true,  priority: 3, description: "De cero a héroe en una jornada. La mayor subida de posiciones de un tirón." },
-  { id: "ned",         emoji: "🧑‍🏫", name: "Ned Flanders", positive: true,  priority: 4, description: "Sus predicciones son tan correctas que aburren. El vecino responsable que todos odian un poco." },
-  { id: "consistente", emoji: "🪨", name: "Consistente",  positive: true,  priority: 5, description: "Nunca ha tocado fondo. Como una roca, pero con quinielas." },
-  { id: "fumanchu",    emoji: "💨", name: "Fumanchú",     positive: false, priority: 6, description: "Predijo un marcador tan disparatado que huele a humo. El problema no fue el partido, fuiste tú." },
-  { id: "triplista",   emoji: "🏀", name: "Triplista",    positive: false, priority: 7, description: "No falla uno, los falla todos. Consistencia en el desastre, hay que reconocérselo." },
-  { id: "ciego",       emoji: "🙈", name: "Ciego",        positive: false, priority: 8, description: "El peor ratio exactos/partidos. Tiene los ojos abiertos pero no ve nada." },
-  { id: "gafe",        emoji: "🪦", name: "Gafe",         positive: false, priority: 9, description: "Más tiempo en el pozo que un cubo. Lidera el ranking de últimos puestos con autoridad." },
+  { id: "quinielas",     emoji: "🎯", name: "Quinielas",     positive: true,  priority: 0,  description: "El rey del signo. Adivina quién gana aunque no sepa el marcador ni de qué país es el equipo." },
+  { id: "visionario",    emoji: "🔮", name: "Visionario",    positive: true,  priority: 1,  description: "No predice partidos, los recibe en sueños. Más exactos que el resto juntos." },
+  { id: "estratega",     emoji: "🧠", name: "Estratega",     positive: true,  priority: 2,  description: "Le importan los signos lo mismo que los del horóscopo, pero monto el efecto mariposa perfecto para cuadrar todo en sus grupos." },
+  { id: "pelotazo",      emoji: "🎰", name: "Pelotazo",      positive: true,  priority: 3,  description: "Acertó ese marcador rarísimo que nadie más vio venir. Suerte o genialidad, tú decides." },
+  { id: "cohete",        emoji: "🚀", name: "Cohete",        positive: true,  priority: 4,  description: "De cero a héroe en una jornada. La mayor subida de posiciones de un tirón." },
+  { id: "ned",           emoji: "🧑‍🏫", name: "Ned Flanders", positive: true,  priority: 5,  description: "Sus predicciones son tan correctas que aburren. El vecino responsable que todos odian un poco." },
+  { id: "consistente",   emoji: "🪨", name: "Consistente",   positive: true,  priority: 6,  description: "Nunca ha tocado fondo. Como una roca, pero con quinielas." },
+  { id: "fumanchu",      emoji: "💨", name: "Fumanchú",      positive: false, priority: 7,  description: "Predijo un marcador tan disparatado que huele a humo. El problema no fue el partido, fuiste tú." },
+  { id: "triplista",     emoji: "🏀", name: "Triplista",     positive: false, priority: 8,  description: "No falla uno, los falla todos. Consistencia en el desastre, hay que reconocérselo." },
+  { id: "ciego",         emoji: "🙈", name: "Ciego",         positive: false, priority: 9,  description: "El peor ratio exactos/partidos. Tiene los ojos abiertos pero no ve nada." },
+  { id: "asencio",       emoji: "👧", name: "Asencio",       positive: false, priority: 10, description: "Más de dieciseisaños que dieciseisavos, como nuestro protagonista... para encerrarlo." },
+  { id: "gafe",          emoji: "🪦", name: "Gafe",          positive: false, priority: 11, description: "Más tiempo en el pozo que un cubo. Lidera el ranking de últimos puestos con autoridad." },
 ];
 
 // ---- Helpers ----
@@ -124,7 +126,16 @@ export function computeBadges(
     fallosGordos: number;        // disparateScore >= UMBRAL
     worstDisparate: { score: number; partido: string; pred: string; real: string; fecha: string };
     exactoDetails: { partido: string; pred: string; predObj: { local: number; visitante: number } }[];
+    clasifAcertados: number;        // equipos que predijo clasificados a dieciseisavos y sí lo hicieron
+    clasifTotal: number;            // equipos que predijo en total (normalmente 32)
+    exactosDieciseis: number;       // marcadores exactos en los cruces de dieciseisavos
+    dieciseisJugados: number;       // cruces de dieciseisavos ya jugados
+    combinedDieciseisScore: number; // pts clasificados + pts cruces, ambos en dieciseisavos (Estratega/Manta)
   }
+
+  const clasifDieciseisReal = new Set(
+    Array.isArray(extra["clasif_dieciseisavos"]) ? (extra["clasif_dieciseisavos"] as string[]) : []
+  );
 
   const stats: PlayerStats[] = players.map(p => {
     let signos1x2 = 0, exactos = 0, jugados = 0, fallosGordos = 0;
@@ -155,8 +166,36 @@ export function computeBadges(
         exactoDetails.push({ partido: m.partido, pred: `${m.pred.local}-${m.pred.visitante}`, predObj: m.pred });
       }
     }
-    return { id: p.id, nombre: p.nombre, signos1x2, exactos, jugados, fallosGordos, worstDisparate, exactoDetails };
+
+    // Equipos clasificados a dieciseisavos: cuenta solo si ya hay lista real
+    const clasifAcertados = clasifDieciseisReal.size > 0
+      ? p.clasif_dieciseisavos.filter(eq => clasifDieciseisReal.has(eq)).length
+      : 0;
+    const clasifTotal = p.clasif_dieciseisavos.length;
+    const clasifPts = clasifAcertados * CLASIF_PTS["dieciseisavos"];
+
+    // Cruces de dieciseisavos: usa el mismo baremo [signo, diferencia, exacto] que la puntuación real
+    let exactosDieciseis = 0, dieciseisJugados = 0, koPts = 0;
+    for (const m of p.enfr_dieciseisavos) {
+      const r = real[m.partido];
+      if (!r) continue;
+      dieciseisJugados++;
+      const s = scoreMatch(m.pred, r, KO_PTS["dieciseisavos"]);
+      koPts += s.pts;
+      if (s.hit === "exacto") exactosDieciseis++;
+    }
+
+    const combinedDieciseisScore = clasifPts + koPts;
+
+    return {
+      id: p.id, nombre: p.nombre, signos1x2, exactos, jugados, fallosGordos, worstDisparate, exactoDetails,
+      clasifAcertados, clasifTotal, exactosDieciseis, dieciseisJugados, combinedDieciseisScore,
+    };
   });
+
+  // Estratega/Manta solo se asignan si ya hay datos reales de dieciseisavos (clasificados o cruces jugados)
+  const hasDieciseisavosData =
+    clasifDieciseisReal.size > 0 || stats.some(s => s.dieciseisJugados > 0);
 
   // Pelotazo
   const exactosByPartido: Record<string, number> = {};
@@ -258,6 +297,9 @@ export function computeBadges(
     switch (badgeId) {
       case "quinielas":   return `${s?.signos1x2 ?? 0}/${s?.jugados ?? 0} aciertos 1X2`;
       case "visionario":  return `${s?.exactos ?? 0}/${s?.jugados ?? 0} exactos`;
+      case "estratega":
+      case "asencio":
+        return `${s?.clasifAcertados ?? 0}/${s?.clasifTotal ?? 0} equipos + ${s?.exactosDieciseis ?? 0}/${s?.dieciseisJugados ?? 0} exactos en dieciseisavos (${s?.combinedDieciseisScore ?? 0} pts)`;
       case "pelotazo": {
         const p = pelotazoScores[playerId];
         return p?.score > 0
@@ -301,7 +343,12 @@ export function computeBadges(
     isGafe = false,
   ) {
     if (assignedBadges.has(badgeId)) return;
-    const badge = BADGES.find(b => b.id === badgeId)!;
+    const badge = BADGES.find(b => b.id === badgeId);
+    if (!badge) {
+      // eslint-disable-next-line no-console
+      console.warn(`[badges] Ignorando "${badgeId}": no existe ese id en BADGES. ¿Renombraste el id sin actualizar assign()/buildDetail?`);
+      return;
+    }
 
     const valid = higherIsBetter
       ? candidates.filter(c => c.val > 0)
@@ -347,6 +394,10 @@ export function computeBadges(
   // Asignar en orden de prioridad
   assign("quinielas",   stats.map(s => ({ id: s.id, val: s.signos1x2 })),                                         true);
   assign("visionario",  stats.map(s => ({ id: s.id, val: s.exactos })),                                           true);
+  if (hasDieciseisavosData) {
+    assign("estratega", stats.map(s => ({ id: s.id, val: s.combinedDieciseisScore })),                            true);
+    assign("asencio",   stats.map(s => ({ id: s.id, val: s.combinedDieciseisScore })),                            false);
+  }
   assign("pelotazo",    players.map(p => ({ id: p.id, val: pelotazoScores[p.id]?.score ?? 0 })),                  true);
   assign("cohete",      players.map(p => ({ id: p.id, val: maxRise[p.id]?.rise ?? 0 })),                          true);
   assign("ned",         stats.map(s => ({ id: s.id, val: s.fallosGordos })),                                      false);

@@ -28,7 +28,7 @@ export interface Player {
 }
 
 // Puntos por ronda de eliminatoria: [signo, diferencia, exacto]
-const KO_PTS: Record<string, [number, number, number]> = {
+export const KO_PTS: Record<string, [number, number, number]> = {
   dieciseisavos: [3, 2, 5],
   octavos:       [3, 2, 5],
   cuartos:       [4, 2, 6],
@@ -36,7 +36,7 @@ const KO_PTS: Record<string, [number, number, number]> = {
   "3y4":         [10, 5, 15],
   final:         [12, 6, 18],
 };
-const CLASIF_PTS: Record<string, number> = {
+export const CLASIF_PTS: Record<string, number> = {
   dieciseisavos: 3, octavos: 10, cuartos: 15, semis: 20, "3y4": 15, final: 25,
 };
 const POS_PTS = 5;       // posición exacta en grupo (1º/2º/3º/4º)
