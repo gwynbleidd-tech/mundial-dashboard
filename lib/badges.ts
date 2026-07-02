@@ -5,6 +5,10 @@
 import type { Player, RealResults, RealExtra } from "@/lib/scoring";
 import { scoreMatch, GRUPO_PTS, KO_PTS, CLASIF_PTS, standings } from "@/lib/scoring";
 import horarios from "@/data/horarios_grupos.json";
+import crucesData from "@/data/cruces_eliminatoria.json";
+
+type CruceFijado = { partido: string };
+const CRUCES = crucesData as Record<string, CruceFijado[]>;
 
 // ---- Tipos ----
 
@@ -32,7 +36,7 @@ export interface PlayerBadge {
 export const BADGES: Badge[] = [
   { id: "quinielas",     emoji: "🎯", name: "Quinielas",     positive: true,  priority: 0,  description: "El rey del signo. Adivina quién gana aunque no sepa el marcador ni de qué país es el equipo." },
   { id: "visionario",    emoji: "🔮", name: "Visionario",    positive: true,  priority: 1,  description: "No predice partidos, los recibe en sueños. Más exactos que el resto juntos." },
-  { id: "estratega",     emoji: "🧠", name: "Estratega",     positive: true,  priority: 2,  description: "Le importan los signos lo mismo que los del horóscopo, pero monto el efecto mariposa perfecto para cuadrar todo en sus grupos." },
+  { id: "estratega",     emoji: "🧠", name: "Estratega",     positive: true,  priority: 2,  description: "Le importan lo mismo los signos que los del horóscopo y los marcadores los pone al azar, pero te arma un PowerPoint de sus aciertos con el grupo de la muerte." },
   { id: "pelotazo",      emoji: "🎰", name: "Pelotazo",      positive: true,  priority: 3,  description: "Acertó ese marcador rarísimo que nadie más vio venir. Suerte o genialidad, tú decides." },
   { id: "cohete",        emoji: "🚀", name: "Cohete",        positive: true,  priority: 4,  description: "De cero a héroe en una jornada. La mayor subida de posiciones de un tirón." },
   { id: "ned",           emoji: "🧑‍🏫", name: "Ned Flanders", positive: true,  priority: 5,  description: "Sus predicciones son tan correctas que aburren. El vecino responsable que todos odian un poco." },
@@ -104,6 +108,24 @@ function pelotazoScore(
   return failedFraction * rareza;
 }
 
+/**
+ * `extra["clasif_*"]` debería llegar como string[], pero si en algún punto de la carga
+ * (Supabase → extra) no se hace el JSON.parse de vuelta, llega como string JSON crudo.
+ * Este helper acepta ambas formas para que la insignia no dependa de esa capa intermedia.
+ */
+function toStringArray(v: string | string[] | undefined): string[] {
+  if (Array.isArray(v)) return v;
+  if (typeof v === "string") {
+    try {
+      const parsed = JSON.parse(v);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      // no era JSON válido, se ignora
+    }
+  }
+  return [];
+}
+
 // ---- Motor principal ----
 
 export function computeBadges(
@@ -128,14 +150,16 @@ export function computeBadges(
     exactoDetails: { partido: string; pred: string; predObj: { local: number; visitante: number } }[];
     clasifAcertados: number;        // equipos que predijo clasificados a dieciseisavos y sí lo hicieron
     clasifTotal: number;            // equipos que predijo en total (normalmente 32)
-    exactosDieciseis: number;       // marcadores exactos en los cruces de dieciseisavos
-    dieciseisJugados: number;       // cruces de dieciseisavos ya jugados
-    combinedDieciseisScore: number; // pts clasificados + pts cruces, ambos en dieciseisavos (Estratega/Manta)
+    enfrentamientosAcertados: number; // cruces de dieciseisavos que YA están fijados en admin y coinciden con su predicción
+    enfrentamientosTotal: number;     // cruces de dieciseisavos que predijo en total (normalmente 16)
+    combinedDieciseisScore: number;   // pts clasificados + pts por enfrentamiento acertado, ambos en dieciseisavos (Estratega/Asencio)
   }
 
-  const clasifDieciseisReal = new Set(
-    Array.isArray(extra["clasif_dieciseisavos"]) ? (extra["clasif_dieciseisavos"] as string[]) : []
-  );
+  const clasifDieciseisReal = new Set(toStringArray(extra["clasif_dieciseisavos"]));
+
+  // Cruces de dieciseisavos ya fijados por el admin (independiente de si ya se jugaron/tienen marcador).
+  // Acertar el enfrentamiento = el "partido" que predijo el jugador coincide con uno de estos, ya fijados.
+  const cruceDieciseisFijados = new Set((CRUCES["enfr_dieciseisavos"] ?? []).map(c => c.partido));
 
   const stats: PlayerStats[] = players.map(p => {
     let signos1x2 = 0, exactos = 0, jugados = 0, fallosGordos = 0;
@@ -174,28 +198,27 @@ export function computeBadges(
     const clasifTotal = p.clasif_dieciseisavos.length;
     const clasifPts = clasifAcertados * CLASIF_PTS["dieciseisavos"];
 
-    // Cruces de dieciseisavos: usa el mismo baremo [signo, diferencia, exacto] que la puntuación real
-    let exactosDieciseis = 0, dieciseisJugados = 0, koPts = 0;
-    for (const m of p.enfr_dieciseisavos) {
-      const r = real[m.partido];
-      if (!r) continue;
-      dieciseisJugados++;
-      const s = scoreMatch(m.pred, r, KO_PTS["dieciseisavos"]);
-      koPts += s.pts;
-      if (s.hit === "exacto") exactosDieciseis++;
-    }
+    // Cruces de dieciseisavos: lo que puntúa es ACERTAR EL ENFRENTAMIENTO (qué dos equipos se
+    // cruzan), tal y como ya está fijado en Admin → Eliminatorias — NO hace falta que el partido
+    // se haya jugado ni que tenga marcador. El peso reutiliza el primer escalón del baremo real
+    // de esa ronda (signo = 3 pts) para no inventar un número nuevo.
+    const ENFRENTAMIENTO_PTS = KO_PTS["dieciseisavos"][0];
+    const enfrentamientosAcertados = p.enfr_dieciseisavos.filter(m => cruceDieciseisFijados.has(m.partido)).length;
+    const enfrentamientosTotal = p.enfr_dieciseisavos.length;
+    const enfrentamientoPts = enfrentamientosAcertados * ENFRENTAMIENTO_PTS;
 
-    const combinedDieciseisScore = clasifPts + koPts;
+    const combinedDieciseisScore = clasifPts + enfrentamientoPts;
 
     return {
       id: p.id, nombre: p.nombre, signos1x2, exactos, jugados, fallosGordos, worstDisparate, exactoDetails,
-      clasifAcertados, clasifTotal, exactosDieciseis, dieciseisJugados, combinedDieciseisScore,
+      clasifAcertados, clasifTotal, enfrentamientosAcertados, enfrentamientosTotal, combinedDieciseisScore,
     };
   });
 
-  // Estratega/Manta solo se asignan si ya hay datos reales de dieciseisavos (clasificados o cruces jugados)
+  // Estratega/Asencio solo se asignan si ya hay datos con los que comparar: clasificados reales
+  // rellenados, o el bracket de dieciseisavos ya fijado en Admin → Eliminatorias.
   const hasDieciseisavosData =
-    clasifDieciseisReal.size > 0 || stats.some(s => s.dieciseisJugados > 0);
+    clasifDieciseisReal.size > 0 || cruceDieciseisFijados.size > 0;
 
   // Pelotazo
   const exactosByPartido: Record<string, number> = {};
@@ -299,7 +322,7 @@ export function computeBadges(
       case "visionario":  return `${s?.exactos ?? 0}/${s?.jugados ?? 0} exactos`;
       case "estratega":
       case "asencio":
-        return `${s?.clasifAcertados ?? 0}/${s?.clasifTotal ?? 0} equipos + ${s?.exactosDieciseis ?? 0}/${s?.dieciseisJugados ?? 0} exactos en dieciseisavos (${s?.combinedDieciseisScore ?? 0} pts)`;
+        return `${s?.clasifAcertados ?? 0}/${s?.clasifTotal ?? 0} equipos + ${s?.enfrentamientosAcertados ?? 0}/${s?.enfrentamientosTotal ?? 16} enfrentamientos acertados en dieciseisavos (${s?.combinedDieciseisScore ?? 0} pts)`;
       case "pelotazo": {
         const p = pelotazoScores[playerId];
         return p?.score > 0
