@@ -53,6 +53,16 @@ const NEXT_CLASIF_RONDA: Partial<Record<KoRondaKey, string>> = {
 const TODAY_ISO = new Date().toISOString().slice(0, 10);
 const DEFAULT_PHASE: Phase = TODAY_ISO >= "2026-06-28" ? "eliminatorias" : "grupos";
 
+// Última ronda con kickoffs definidos = ronda activa
+const DEFAULT_KO_RONDA: KoRondaKey = (() => {
+  const keys: KoRondaKey[] = ["dieciseisavos", "octavos", "cuartos", "semis", "3y4", "final"];
+  let active: KoRondaKey = "dieciseisavos";
+  for (const key of keys) {
+    if ((CRUCES["enfr_" + key] ?? []).some((c) => c.kickoff)) active = key;
+  }
+  return active;
+})();
+
 function formatKoHora(kickoff: string): string {
   return new Date(kickoff).toLocaleString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" });
 }
@@ -166,7 +176,7 @@ interface Props {
 export default function JornadaScreen({ players, real, extra, youtube }: Props) {
   const [phase, setPhase] = useState<Phase>(DEFAULT_PHASE);
   const [day, setDay] = useState<string>(getDefaultDay);
-  const [koRonda, setKoRonda] = useState<KoRondaKey>("dieciseisavos");
+  const [koRonda, setKoRonda] = useState<KoRondaKey>(DEFAULT_KO_RONDA);
   const [open, setOpen] = useState<Set<string>>(() => new Set());
 
   const idx = DAYS.indexOf(day);
@@ -451,7 +461,7 @@ export default function JornadaScreen({ players, real, extra, youtube }: Props) 
           {/* Lista de partidos KO */}
           {(() => {
             const cruces = CRUCES["enfr_" + koRonda] ?? [];
-            const esRondaFutura = koRonda !== "dieciseisavos" && !cruces.some((c) => real[c.partido]);
+            const esRondaFutura = !cruces.some((c) => c.kickoff) && !cruces.some((c) => real[c.partido]);
             if (esRondaFutura) return (
               <div style={{
                 textAlign: "center", padding: "48px 20px",

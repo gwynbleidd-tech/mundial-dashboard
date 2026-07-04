@@ -35,6 +35,16 @@ const KO_BAREMO: Record<string, [number, number, number]> = {
   semis: [6, 4, 10], "3y4": [10, 5, 15], final: [12, 6, 18],
 };
 
+// Última ronda con kickoffs definidos = ronda activa
+const DEFAULT_RONDA_TAB: string = (() => {
+  const keys = ["dieciseisavos", "octavos", "cuartos", "semis", "3y4", "final"];
+  let active = "dieciseisavos";
+  for (const key of keys) {
+    if ((CRUCES_DATA["enfr_" + key] ?? []).some((c: CruceReal) => c.kickoff)) active = key;
+  }
+  return active;
+})();
+
 const KO_RONDAS = [
   { key: "dieciseisavos", label: "1/16 de final",   short: "1/16" },
   { key: "octavos",       label: "Octavos de final", short: "Octavos" },
@@ -1168,7 +1178,7 @@ function GroupView({
 
 export default function JugadorScreen({ players, picked, onPick, real, extra, ranked = [] }: Props) {
   const [grupoTab, setGrupoTab] = useState<string>("todos");
-  const [rondaTab, setRondaTab] = useState<string>("dieciseisavos");
+  const [rondaTab, setRondaTab] = useState<string>(DEFAULT_RONDA_TAB);
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["honor"]));
   const [isHydrated, setIsHydrated] = useState(false);
 
