@@ -1,13 +1,41 @@
 import horarios from "@/data/horarios_grupos.json";
+import cruces from "@/data/cruces_eliminatoria.json";
 import { scorePlayer } from "@/lib/scoring";
 import { HITOS, partialExtra } from "@/lib/hitos";
 import type { Player, RealResults, RealExtra } from "@/lib/scoring";
 
 interface MatchEntry { partido: string; kickoff: string; }
 
+// Los partidos de fase de grupos siempre tienen kickoff.
+const GROUP_MATCHES: MatchEntry[] = (
+  Object.values(horarios as Record<string, MatchEntry[]>).flat()
+);
+
+// En cruces_eliminatoria.json solo "enfr_dieciseisavos" trae kickoff real
+// (los cruces posteriores dependen de quién avance, así que su fecha exacta
+// no se conoce de antemano). Para poder ordenarlos y agruparlos por día,
+// usamos una fecha representativa de cada fase del calendario del Mundial 2026.
+const FASE_FALLBACK_KICKOFF: Record<string, string> = {
+  enfr_octavos: "2026-07-05T20:00:00",
+  enfr_cuartos: "2026-07-09T20:00:00",
+  enfr_semis:   "2026-07-14T20:00:00",
+  enfr_3y4:     "2026-07-18T20:00:00",
+  enfr_final:   "2026-07-19T18:00:00",
+};
+
+interface CrossEntry { partido: string; kickoff?: string; }
+
+const ELIMINATION_MATCHES: MatchEntry[] = Object.entries(
+  cruces as Record<string, CrossEntry[]>,
+).flatMap(([fase, partidos]) =>
+  partidos.map(p => ({
+    partido: p.partido,
+    kickoff: p.kickoff ?? FASE_FALLBACK_KICKOFF[fase] ?? "2099-01-01T00:00:00",
+  })),
+);
+
 const ALL_MATCHES: MatchEntry[] = (
-  Object.values(horarios as Record<string, MatchEntry[]>)
-    .flat()
+  [...GROUP_MATCHES, ...ELIMINATION_MATCHES]
     .sort((a, b) => a.kickoff.localeCompare(b.kickoff))
 );
 
