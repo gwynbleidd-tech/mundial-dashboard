@@ -57,6 +57,7 @@ type FixtureEntry = { partido: string; kickoff?: string };
 const RONDAS_KO = ["dieciseisavos", "octavos", "cuartos", "semis", "3y4", "final"] as const;
 type RondaKO = typeof RONDAS_KO[number];
 
+<<<<<<< HEAD
 // Orden cronológico de cada ronda. Se usa como fallback para ordenar partidos que aún no
 // tienen "kickoff" en cruces_eliminatoria.json (a día de hoy, cuartos/semis/3y4/final no lo
 // tienen todavía — solo dieciseisavos y octavos), para que no se cuelen al principio de la
@@ -78,9 +79,21 @@ for (const r of RONDAS_KO) {
     if (!RONDA_BY_PARTIDO[f.partido]) RONDA_BY_PARTIDO[f.partido] = r;
   }
 }
+=======
+const ALL_FIXTURES: FixtureEntry[] = Object.values(
+  horarios as Record<string, FixtureEntry[]>
+).flat();
+>>>>>>> a6600d9552b2eea07709111d7448c6476150b094
+
+// Índice partido -> kickoff para lookups O(1) (dateOfPartido se llama muchas veces)
+const KICKOFF_BY_PARTIDO: Record<string, string> = {};
+for (const f of ALL_FIXTURES) {
+  if (!KICKOFF_BY_PARTIDO[f.partido]) KICKOFF_BY_PARTIDO[f.partido] = f.kickoff;
+}
 
 function dateOfPartido(partido: string): string {
   return KICKOFF_BY_PARTIDO[partido]?.slice(0, 10) ?? "";
+<<<<<<< HEAD
 }
 
 /**
@@ -93,6 +106,8 @@ function sortKeyOfPartido(partido: string): string {
   if (kickoff) return kickoff;
   const orden = ORDEN_RONDA[RONDA_BY_PARTIDO[partido] ?? ""] ?? 99;
   return `zzzz-${String(orden).padStart(3, "0")}-${partido}`;
+=======
+>>>>>>> a6600d9552b2eea07709111d7448c6476150b094
 }
 
 function formatDate(dateStr: string): string {
@@ -211,9 +226,15 @@ export function computeBadges(
     // Recorre fase de grupos + las 6 rondas de eliminatoria con el baremo de puntos que le
     // corresponde a cada una, para que Quinielas/Visionario/Ned/Fumanchú/Triplista/Ciego/Pelotazo
     // cuenten TODOS los partidos del torneo, no solo los 72 de grupos.
+<<<<<<< HEAD
     const bloques: { matches: Match[]; baremo: [number, number, number] }[] = [
       { matches: p.fase_grupos, baremo: GRUPO_PTS },
       ...RONDAS_KO.map(r => ({ matches: (p as any)["enfr_" + r] as Match[], baremo: KO_PTS[r] })),
+=======
+    const bloques: { matches: { partido: string; pred: { local: number; visitante: number } }[]; baremo: [number, number, number] }[] = [
+      { matches: p.fase_grupos, baremo: GRUPO_PTS },
+      ...RONDAS_KO.map(r => ({ matches: (p as any)["enfr_" + r] as { partido: string; pred: { local: number; visitante: number } }[], baremo: KO_PTS[r] })),
+>>>>>>> a6600d9552b2eea07709111d7448c6476150b094
     ];
 
     for (const { matches, baremo } of bloques) {
@@ -221,7 +242,18 @@ export function computeBadges(
         const r = real[m.partido];
         if (!r) continue;
         jugados++;
+<<<<<<< HEAD
         const s = scoreMatch(m.pred, r, baremo);
+=======
+        const s = scoreMatch(
+          {
+            ...m.pred,
+            signo: signoDe(m.pred.local, m.pred.visitante),
+          },
+          r,
+          baremo
+        );
+>>>>>>> a6600d9552b2eea07709111d7448c6476150b094
         if (s.hit === "exacto") { exactos++; signos1x2++; }
         else if (s.hit === "signo") signos1x2++;
 
@@ -329,7 +361,11 @@ export function computeBadges(
   }
   const partidos = Array.from(partidoSet)
     .filter(pid => real[pid])
+<<<<<<< HEAD
     .sort((a, b) => sortKeyOfPartido(a).localeCompare(sortKeyOfPartido(b)));
+=======
+    .sort((a, b) => (KICKOFF_BY_PARTIDO[a] ?? "").localeCompare(KICKOFF_BY_PARTIDO[b] ?? ""));
+>>>>>>> a6600d9552b2eea07709111d7448c6476150b094
   const cumReal: RealResults = {};
 
   for (const partido of partidos) {
