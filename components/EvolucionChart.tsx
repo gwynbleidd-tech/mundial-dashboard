@@ -21,7 +21,7 @@ const PALETTE = [
   "#FF6B35", // coral
 ];
 
-const MARGEN = 5;
+const MARGEN = 20;
 
 interface Props {
   data: EvoRow[];
