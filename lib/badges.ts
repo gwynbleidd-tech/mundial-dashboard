@@ -2,12 +2,12 @@
  * Motor de insignias — Porra Mundial 2026
  */
 
-import type { Player, RealResults, RealExtra } from "@/lib/scoring";
+import type { Player, RealResults, RealExtra, Match } from "@/lib/scoring";
 import { scoreMatch, GRUPO_PTS, KO_PTS, CLASIF_PTS, standings } from "@/lib/scoring";
 import horarios from "@/data/horarios_grupos.json";
 import crucesData from "@/data/cruces_eliminatoria.json";
 
-type CruceFijado = { partido: string };
+type CruceFijado = { partido: string; kickoff?: string };
 const CRUCES = crucesData as Record<string, CruceFijado[]>;
 
 // ---- Tipos ----
@@ -29,35 +29,70 @@ export interface PlayerBadge {
 }
 
 // ---- Catálogo ----
-// Positivas priority 0..6: menor priority = más valiosa = en empate va al más alto clasificado
-// Negativas priority 7..11: mayor priority = más grave = en empate va al más bajo clasificado
-// Gafe (11) siempre al último
+// Positivas priority 0..7: menor priority = más valiosa = en empate va al más alto clasificado
+// Negativas priority 8..13: mayor priority = más grave = en empate va al más bajo clasificado
+// Gafe (13) siempre al último
 
 export const BADGES: Badge[] = [
   { id: "quinielas",     emoji: "🎯", name: "Quinielas",     positive: true,  priority: 0,  description: "El rey del signo. Adivina quién gana aunque no sepa el marcador ni de qué país es el equipo." },
   { id: "visionario",    emoji: "🔮", name: "Visionario",    positive: true,  priority: 1,  description: "No predice partidos, los recibe en sueños. Más exactos que el resto juntos." },
-  { id: "estratega",     emoji: "🧠", name: "Estratega",     positive: true,  priority: 2,  description: "Le importan lo mismo los signos que los del horóscopo y los marcadores los pone al azar, pero te arma un PowerPoint de sus aciertos con el grupo de la muerte." },
-  { id: "pelotazo",      emoji: "🎰", name: "Pelotazo",      positive: true,  priority: 3,  description: "Acertó ese marcador rarísimo que nadie más vio venir. Suerte o genialidad, tú decides." },
-  { id: "cohete",        emoji: "🚀", name: "Cohete",        positive: true,  priority: 4,  description: "De cero a héroe en una jornada. La mayor subida de posiciones de un tirón." },
-  { id: "ned",           emoji: "🧑‍🏫", name: "Ned Flanders", positive: true,  priority: 5,  description: "Sus predicciones son tan correctas que aburren. El vecino responsable que todos odian un poco." },
-  { id: "consistente",   emoji: "🪨", name: "Consistente",   positive: true,  priority: 6,  description: "Nunca ha tocado fondo. Como una roca, pero con quinielas." },
-  { id: "fumanchu",      emoji: "💨", name: "Fumanchú",      positive: false, priority: 7,  description: "Predijo un marcador tan disparatado que huele a humo. El problema no fue el partido, fuiste tú." },
-  { id: "triplista",     emoji: "🏀", name: "Triplista",     positive: false, priority: 8,  description: "No falla uno, los falla todos. Consistencia en el desastre, hay que reconocérselo." },
-  { id: "ciego",         emoji: "🙈", name: "Ciego",         positive: false, priority: 9,  description: "El peor ratio exactos/partidos. Tiene los ojos abiertos pero no ve nada." },
-  { id: "asencio",       emoji: "👧", name: "Asencio",       positive: false, priority: 10, description: "Más de dieciseisaños que dieciseisavos, como nuestro protagonista... para encerrarlo." },
-  { id: "gafe",          emoji: "🪦", name: "Gafe",          positive: false, priority: 11, description: "Más tiempo en el pozo que un cubo. Lidera el ranking de últimos puestos con autoridad." },
+  { id: "arquitecto",    emoji: "🏗️", name: "Arquitecto",    positive: true,  priority: 2,  description: "Construye el bracket perfecto, pieza a pieza. El que mejor combina equipos clasificados y enfrentamientos acertados en octavos." },
+  { id: "estratega",     emoji: "🧠", name: "Estratega",     positive: true,  priority: 3,  description: "Le importan lo mismo los signos que los del horóscopo y los marcadores los pone al azar, pero te arma un PowerPoint de sus aciertos con el grupo de la muerte." },
+  { id: "pelotazo",      emoji: "🎰", name: "Pelotazo",      positive: true,  priority: 4,  description: "Acertó ese marcador rarísimo que nadie más vio venir. Suerte o genialidad, tú decides." },
+  { id: "cohete",        emoji: "🚀", name: "Cohete",        positive: true,  priority: 5,  description: "De cero a héroe en una jornada. La mayor subida de posiciones de un tirón." },
+  { id: "ned",           emoji: "🧑‍🏫", name: "Ned Flanders", positive: true,  priority: 6,  description: "Sus predicciones son tan correctas que aburren. El vecino responsable que todos odian un poco." },
+  { id: "consistente",   emoji: "🪨", name: "Consistente",   positive: true,  priority: 7,  description: "Nunca ha tocado fondo. Como una roca, pero con quinielas." },
+  { id: "fumanchu",      emoji: "💨", name: "Fumanchú",      positive: false, priority: 8,  description: "Predijo un marcador tan disparatado que huele a humo. El problema no fue el partido, fuiste tú." },
+  { id: "triplista",     emoji: "🏀", name: "Triplista",     positive: false, priority: 9,  description: "No falla uno, los falla todos. Consistencia en el desastre, hay que reconocérselo." },
+  { id: "ciego",         emoji: "🙈", name: "Ciego",         positive: false, priority: 10, description: "El peor ratio exactos/partidos. Tiene los ojos abiertos pero no ve nada." },
+  { id: "chavo8",        emoji: "🎱", name: "Chavo del 8",   positive: false, priority: 11, description: "La bola que si la metes, pierdes la partida. El que peor combina equipos clasificados y enfrentamientos acertados en octavos." },
+  { id: "asencio",       emoji: "👧", name: "Asencio",       positive: false, priority: 12, description: "Más de dieciseisaños que dieciseisavos, como nuestro protagonista... para encerrarlo." },
+  { id: "gafe",          emoji: "🪦", name: "Gafe",          positive: false, priority: 13, description: "Más tiempo en el pozo que un cubo. Lidera el ranking de últimos puestos con autoridad." },
 ];
 
 // ---- Helpers ----
 
-type FixtureEntry = { partido: string; kickoff: string };
+type FixtureEntry = { partido: string; kickoff?: string };
 
-const ALL_FIXTURES: FixtureEntry[] = Object.values(
-  horarios as Record<string, FixtureEntry[]>
-).flat();
+const RONDAS_KO = ["dieciseisavos", "octavos", "cuartos", "semis", "3y4", "final"] as const;
+type RondaKO = typeof RONDAS_KO[number];
+
+// Orden cronológico de cada ronda. Se usa como fallback para ordenar partidos que aún no
+// tienen "kickoff" en cruces_eliminatoria.json (a día de hoy, cuartos/semis/3y4/final no lo
+// tienen todavía — solo dieciseisavos y octavos), para que no se cuelen al principio de la
+// cronología por tener una fecha "vacía".
+const ORDEN_RONDA: Record<string, number> = {
+  dieciseisavos: 1, octavos: 2, cuartos: 3, semis: 4, "3y4": 5, final: 6,
+};
+
+// Índice partido -> kickoff para lookups O(1) (dateOfPartido se llama muchas veces).
+// Índice partido -> ronda, para el fallback de orden cuando no hay kickoff.
+const KICKOFF_BY_PARTIDO: Record<string, string> = {};
+const RONDA_BY_PARTIDO: Record<string, string> = {};
+for (const f of Object.values(horarios as Record<string, FixtureEntry[]>).flat()) {
+  if (f.kickoff && !KICKOFF_BY_PARTIDO[f.partido]) KICKOFF_BY_PARTIDO[f.partido] = f.kickoff;
+}
+for (const r of RONDAS_KO) {
+  for (const f of CRUCES["enfr_" + r] ?? []) {
+    if (f.kickoff && !KICKOFF_BY_PARTIDO[f.partido]) KICKOFF_BY_PARTIDO[f.partido] = f.kickoff;
+    if (!RONDA_BY_PARTIDO[f.partido]) RONDA_BY_PARTIDO[f.partido] = r;
+  }
+}
 
 function dateOfPartido(partido: string): string {
-  return ALL_FIXTURES.find(f => f.partido === partido)?.kickoff.slice(0, 10) ?? "";
+  return KICKOFF_BY_PARTIDO[partido]?.slice(0, 10) ?? "";
+}
+
+/**
+ * Clave de orden cronológico para un partido, con fallback cuando no hay "kickoff" real
+ * (cuartos/semis/3y4/final por ahora). Los reales (fecha ISO, empiezan por "2...") siempre
+ * ordenan antes que los fallback ("zzzz..."), y entre fallbacks se respeta el orden de ronda.
+ */
+function sortKeyOfPartido(partido: string): string {
+  const kickoff = KICKOFF_BY_PARTIDO[partido];
+  if (kickoff) return kickoff;
+  const orden = ORDEN_RONDA[RONDA_BY_PARTIDO[partido] ?? ""] ?? 99;
+  return `zzzz-${String(orden).padStart(3, "0")}-${partido}`;
 }
 
 function formatDate(dateStr: string): string {
@@ -153,41 +188,58 @@ export function computeBadges(
     enfrentamientosAcertados: number; // cruces de dieciseisavos que YA están fijados en admin y coinciden con su predicción
     enfrentamientosTotal: number;     // cruces de dieciseisavos que predijo en total (normalmente 16)
     combinedDieciseisScore: number;   // pts clasificados + pts por enfrentamiento acertado, ambos en dieciseisavos (Estratega/Asencio)
+    clasifAcertadosOctavos: number;        // equipos que predijo clasificados a octavos y sí lo hicieron
+    clasifTotalOctavos: number;            // equipos que predijo en total (normalmente 16)
+    enfrentamientosAcertadosOctavos: number; // cruces de octavos ya fijados en admin que coinciden con su predicción
+    enfrentamientosTotalOctavos: number;     // cruces de octavos que predijo en total (normalmente 8)
+    combinedOctavosScore: number;            // pts clasificados + pts por enfrentamiento acertado, ambos en octavos (Bola Blanca/Chavo del 8)
   }
 
   const clasifDieciseisReal = new Set(toStringArray(extra["clasif_dieciseisavos"]));
+  const clasifOctavosReal = new Set(toStringArray(extra["clasif_octavos"]));
 
-  // Cruces de dieciseisavos ya fijados por el admin (independiente de si ya se jugaron/tienen marcador).
+  // Cruces de dieciseisavos/octavos ya fijados por el admin (independiente de si ya se jugaron/tienen marcador).
   // Acertar el enfrentamiento = el "partido" que predijo el jugador coincide con uno de estos, ya fijados.
   const cruceDieciseisFijados = new Set((CRUCES["enfr_dieciseisavos"] ?? []).map(c => c.partido));
+  const cruceOctavosFijados = new Set((CRUCES["enfr_octavos"] ?? []).map(c => c.partido));
 
   const stats: PlayerStats[] = players.map(p => {
     let signos1x2 = 0, exactos = 0, jugados = 0, fallosGordos = 0;
     let worstDisparate = { score: 0, partido: "", pred: "", real: "", fecha: "" };
     const exactoDetails: { partido: string; pred: string; predObj: { local: number; visitante: number } }[] = [];
 
-    for (const m of p.fase_grupos) {
-      const r = real[m.partido];
-      if (!r) continue;
-      jugados++;
-      const s = scoreMatch(m.pred, r, GRUPO_PTS);
-      if (s.hit === "exacto") { exactos++; signos1x2++; }
-      else if (s.hit === "signo") signos1x2++;
+    // Recorre fase de grupos + las 6 rondas de eliminatoria con el baremo de puntos que le
+    // corresponde a cada una, para que Quinielas/Visionario/Ned/Fumanchú/Triplista/Ciego/Pelotazo
+    // cuenten TODOS los partidos del torneo, no solo los 72 de grupos.
+    const bloques: { matches: Match[]; baremo: [number, number, number] }[] = [
+      { matches: p.fase_grupos, baremo: GRUPO_PTS },
+      ...RONDAS_KO.map(r => ({ matches: (p as any)["enfr_" + r] as Match[], baremo: KO_PTS[r] })),
+    ];
 
-      const ds = disparateScore(m.pred, r);
-      if (ds >= DISPARATE_UMBRAL) fallosGordos++;
+    for (const { matches, baremo } of bloques) {
+      for (const m of matches) {
+        const r = real[m.partido];
+        if (!r) continue;
+        jugados++;
+        const s = scoreMatch(m.pred, r, baremo);
+        if (s.hit === "exacto") { exactos++; signos1x2++; }
+        else if (s.hit === "signo") signos1x2++;
 
-      if (ds > worstDisparate.score) {
-        worstDisparate = {
-          score: ds,
-          partido: m.partido,
-          pred: `${m.pred.local}-${m.pred.visitante}`,
-          real: `${r.local}-${r.visitante}`,
-          fecha: dateOfPartido(m.partido),
-        };
-      }
-      if (s.hit === "exacto") {
-        exactoDetails.push({ partido: m.partido, pred: `${m.pred.local}-${m.pred.visitante}`, predObj: m.pred });
+        const ds = disparateScore(m.pred, r);
+        if (ds >= DISPARATE_UMBRAL) fallosGordos++;
+
+        if (ds > worstDisparate.score) {
+          worstDisparate = {
+            score: ds,
+            partido: m.partido,
+            pred: `${m.pred.local}-${m.pred.visitante}`,
+            real: `${r.local}-${r.visitante}`,
+            fecha: dateOfPartido(m.partido),
+          };
+        }
+        if (s.hit === "exacto") {
+          exactoDetails.push({ partido: m.partido, pred: `${m.pred.local}-${m.pred.visitante}`, predObj: m.pred });
+        }
       }
     }
 
@@ -209,9 +261,24 @@ export function computeBadges(
 
     const combinedDieciseisScore = clasifPts + enfrentamientoPts;
 
+    // Mismo cálculo que dieciseisavos, pero para octavos
+    const clasifAcertadosOctavos = clasifOctavosReal.size > 0
+      ? p.clasif_octavos.filter(eq => clasifOctavosReal.has(eq)).length
+      : 0;
+    const clasifTotalOctavos = p.clasif_octavos.length;
+    const clasifPtsOctavos = clasifAcertadosOctavos * CLASIF_PTS["octavos"];
+
+    const ENFRENTAMIENTO_PTS_OCTAVOS = KO_PTS["octavos"][0];
+    const enfrentamientosAcertadosOctavos = p.enfr_octavos.filter(m => cruceOctavosFijados.has(m.partido)).length;
+    const enfrentamientosTotalOctavos = p.enfr_octavos.length;
+    const enfrentamientoPtsOctavos = enfrentamientosAcertadosOctavos * ENFRENTAMIENTO_PTS_OCTAVOS;
+
+    const combinedOctavosScore = clasifPtsOctavos + enfrentamientoPtsOctavos;
+
     return {
       id: p.id, nombre: p.nombre, signos1x2, exactos, jugados, fallosGordos, worstDisparate, exactoDetails,
       clasifAcertados, clasifTotal, enfrentamientosAcertados, enfrentamientosTotal, combinedDieciseisScore,
+      clasifAcertadosOctavos, clasifTotalOctavos, enfrentamientosAcertadosOctavos, enfrentamientosTotalOctavos, combinedOctavosScore,
     };
   });
 
@@ -219,6 +286,10 @@ export function computeBadges(
   // rellenados, o el bracket de dieciseisavos ya fijado en Admin → Eliminatorias.
   const hasDieciseisavosData =
     clasifDieciseisReal.size > 0 || cruceDieciseisFijados.size > 0;
+
+  // Igual que hasDieciseisavosData, pero para octavos (Bola Blanca/Chavo del 8)
+  const hasOctavosData =
+    clasifOctavosReal.size > 0 || cruceOctavosFijados.size > 0;
 
   // Pelotazo
   const exactosByPartido: Record<string, number> = {};
@@ -245,7 +316,20 @@ export function computeBadges(
   const soloLastSet: Record<string, Set<string>> = Object.fromEntries(players.map(p => [p.id, new Set<string>()]));
   const neverLast = new Set(players.map(p => p.id));
 
-  const partidos = players[0]?.fase_grupos.map(m => m.partido).filter(p => real[p]) ?? [];
+  // Unión de todos los partidos (grupos + las 6 rondas de eliminatoria) que aparecen en la
+  // predicción de CUALQUIER jugador — no solo fase_grupos de players[0] — porque los cruces de
+  // eliminatoria son específicos de cada jugador (cada uno arma su propio bracket). Se ordenan
+  // por fecha/hora real (kickoff) para reconstruir la evolución cronológica correcta.
+  const partidoSet = new Set<string>();
+  for (const p of players) {
+    for (const m of p.fase_grupos) partidoSet.add(m.partido);
+    for (const r of RONDAS_KO) {
+      for (const m of (p as any)["enfr_" + r] as { partido: string }[]) partidoSet.add(m.partido);
+    }
+  }
+  const partidos = Array.from(partidoSet)
+    .filter(pid => real[pid])
+    .sort((a, b) => sortKeyOfPartido(a).localeCompare(sortKeyOfPartido(b)));
   const cumReal: RealResults = {};
 
   for (const partido of partidos) {
@@ -323,6 +407,9 @@ export function computeBadges(
       case "estratega":
       case "asencio":
         return `${s?.clasifAcertados ?? 0}/${s?.clasifTotal ?? 0} equipos + ${s?.enfrentamientosAcertados ?? 0}/${s?.enfrentamientosTotal ?? 16} enfrentamientos acertados en dieciseisavos (${s?.combinedDieciseisScore ?? 0} pts)`;
+      case "arquitecto":
+      case "chavo8":
+        return `${s?.clasifAcertadosOctavos ?? 0}/${s?.clasifTotalOctavos ?? 0} equipos + ${s?.enfrentamientosAcertadosOctavos ?? 0}/${s?.enfrentamientosTotalOctavos ?? 8} enfrentamientos acertados en octavos (${s?.combinedOctavosScore ?? 0} pts)`;
       case "pelotazo": {
         const p = pelotazoScores[playerId];
         return p?.score > 0
@@ -417,6 +504,10 @@ export function computeBadges(
   // Asignar en orden de prioridad
   assign("quinielas",   stats.map(s => ({ id: s.id, val: s.signos1x2 })),                                         true);
   assign("visionario",  stats.map(s => ({ id: s.id, val: s.exactos })),                                           true);
+  if (hasOctavosData) {
+    assign("arquitecto", stats.map(s => ({ id: s.id, val: s.combinedOctavosScore })),                             true);
+    assign("chavo8",     stats.map(s => ({ id: s.id, val: s.combinedOctavosScore })),                             false);
+  }
   if (hasDieciseisavosData) {
     assign("estratega", stats.map(s => ({ id: s.id, val: s.combinedDieciseisScore })),                            true);
     assign("asencio",   stats.map(s => ({ id: s.id, val: s.combinedDieciseisScore })),                            false);
