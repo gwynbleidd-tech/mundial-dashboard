@@ -173,155 +173,32 @@
   ],
   "enfr_cuartos": [
     {
-      "partido": "Argentina-Portugal",
-      "local": "Argentina",
-      "visitante": "Portugal",
-      "jugadores": [
-        "borja",
-        "serra",
-        "jotha",
-        "martin",
-        "pecho",
-        "larios"
-      ]
-    },
-    {
-      "partido": "Brasil-Inglaterra",
-      "local": "Brasil",
-      "visitante": "Inglaterra",
-      "jugadores": [
-        "arroyo",
-        "borja",
-        "jotha",
-        "martin"
-      ]
+      "partido": "Francia-Marruecos",
+      "local": "Francia",
+      "visitante": "Marruecos",
+      "kickoff": "2026-07-09T22:00:00+02:00",
+      "jugadores": ["serra", "martin", "pecho"]
     },
     {
       "partido": "España-Bélgica",
       "local": "España",
       "visitante": "Bélgica",
-      "jugadores": [
-        "arroyo",
-        "serra",
-        "pecho",
-        "larios"
-      ]
-    },
-    {
-      "partido": "Francia-Marruecos",
-      "local": "Francia",
-      "visitante": "Marruecos",
-      "jugadores": [
-        "serra",
-        "martin",
-        "pecho"
-      ]
-    },
-    {
-      "partido": "Alemania-Países Bajos",
-      "local": "Alemania",
-      "visitante": "Países Bajos",
-      "jugadores": [
-        "jotha",
-        "larios"
-      ]
-    },
-    {
-      "partido": "España-Turquía",
-      "local": "España",
-      "visitante": "Turquía",
-      "jugadores": [
-        "borja",
-        "martin"
-      ]
-    },
-    {
-      "partido": "Alemania-Inglaterra",
-      "local": "Alemania",
-      "visitante": "Inglaterra",
-      "jugadores": [
-        "pecho"
-      ]
-    },
-    {
-      "partido": "Alemania-Marruecos",
-      "local": "Alemania",
-      "visitante": "Marruecos",
-      "jugadores": [
-        "borja"
-      ]
-    },
-    {
-      "partido": "Argentina-Austria-QF",
-      "local": "Argentina",
-      "visitante": "Austria",
-      "jugadores": [
-        "aldo"
-      ]
-    },
-    {
-      "partido": "Brasil-Croacia",
-      "local": "Brasil",
-      "visitante": "Croacia",
-      "jugadores": [
-        "larios"
-      ]
-    },
-    {
-      "partido": "Colombia-Bélgica",
-      "local": "Colombia",
-      "visitante": "Bélgica",
-      "jugadores": [
-        "aldo"
-      ]
-    },
-    {
-      "partido": "España-Estados Unidos",
-      "local": "España",
-      "visitante": "Estados Unidos",
-      "jugadores": [
-        "jotha"
-      ]
-    },
-    {
-      "partido": "Francia-Brasil",
-      "local": "Francia",
-      "visitante": "Brasil",
-      "jugadores": [
-        "aldo"
-      ]
-    },
-    {
-      "partido": "Francia-Países Bajos",
-      "local": "Francia",
-      "visitante": "Países Bajos",
-      "jugadores": [
-        "arroyo"
-      ]
+      "kickoff": "2026-07-10T21:00:00+02:00",
+      "jugadores": ["arroyo", "serra", "pecho", "larios"]
     },
     {
       "partido": "Noruega-Inglaterra",
       "local": "Noruega",
       "visitante": "Inglaterra",
-      "jugadores": [
-        "serra"
-      ]
+      "kickoff": "2026-07-11T23:00:00+02:00",
+      "jugadores": ["serra"]
     },
     {
-      "partido": "Países Bajos-Inglaterra",
-      "local": "Países Bajos",
-      "visitante": "Inglaterra",
-      "jugadores": [
-        "aldo"
-      ]
-    },
-    {
-      "partido": "Turquía-Portugal",
-      "local": "Turquía",
-      "visitante": "Portugal",
-      "jugadores": [
-        "arroyo"
-      ]
+      "partido": "Argentina-Suiza",
+      "local": "Argentina",
+      "visitante": "Suiza",
+      "kickoff": "2026-07-12T03:00:00+02:00",
+      "jugadores": []
     }
   ],
   "enfr_semis": [
