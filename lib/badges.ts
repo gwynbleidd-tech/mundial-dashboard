@@ -29,25 +29,30 @@ export interface PlayerBadge {
 }
 
 // ---- Catálogo ----
-// Positivas priority 0..7: menor priority = más valiosa = en empate va al más alto clasificado
-// Negativas priority 8..13: mayor priority = más grave = en empate va al más bajo clasificado
-// Gafe (13) siempre al último
+// Positivas priority 0..10: menor priority = más valiosa = en empate va al más alto clasificado
+// Negativas priority 11..18: mayor priority = más grave = en empate va al más bajo clasificado
+// Gafe (18) siempre al último
 
 export const BADGES: Badge[] = [
   { id: "quinielas",     emoji: "🎯", name: "Quinielas",     positive: true,  priority: 0,  description: "El rey del signo. Adivina quién gana aunque no sepa el marcador ni de qué país es el equipo." },
   { id: "visionario",    emoji: "🔮", name: "Visionario",    positive: true,  priority: 1,  description: "No predice partidos, los recibe en sueños. Más exactos que el resto juntos." },
-  { id: "arquitecto",    emoji: "🏗️", name: "Arquitecto",    positive: true,  priority: 2,  description: "Construye el bracket perfecto, pieza a pieza. El que mejor combina equipos clasificados y enfrentamientos acertados en octavos." },
-  { id: "estratega",     emoji: "🧠", name: "Estratega",     positive: true,  priority: 3,  description: "Le importan lo mismo los signos que los del horóscopo y los marcadores los pone al azar, pero te arma un PowerPoint de sus aciertos con el grupo de la muerte." },
-  { id: "pelotazo",      emoji: "🎰", name: "Pelotazo",      positive: true,  priority: 4,  description: "Acertó ese marcador rarísimo que nadie más vio venir. Suerte o genialidad, tú decides." },
-  { id: "cohete",        emoji: "🚀", name: "Cohete",        positive: true,  priority: 5,  description: "De cero a héroe en una jornada. La mayor subida de posiciones de un tirón." },
-  { id: "ned",           emoji: "🧑‍🏫", name: "Ned Flanders", positive: true,  priority: 6,  description: "Sus predicciones son tan correctas que aburren. El vecino responsable que todos odian un poco." },
-  { id: "consistente",   emoji: "🪨", name: "Consistente",   positive: true,  priority: 7,  description: "Nunca ha tocado fondo. Como una roca, pero con quinielas." },
-  { id: "fumanchu",      emoji: "💨", name: "Fumanchú",      positive: false, priority: 8,  description: "Predijo un marcador tan disparatado que huele a humo. El problema no fue el partido, fuiste tú." },
-  { id: "triplista",     emoji: "🏀", name: "Triplista",     positive: false, priority: 9,  description: "No falla uno, los falla todos. Consistencia en el desastre, hay que reconocérselo." },
-  { id: "ciego",         emoji: "🙈", name: "Ciego",         positive: false, priority: 10, description: "El peor ratio exactos/partidos. Tiene los ojos abiertos pero no ve nada." },
-  { id: "chavo8",        emoji: "🎱", name: "Chavo del 8",   positive: false, priority: 11, description: "La bola que si la metes, pierdes la partida. El que peor combina equipos clasificados y enfrentamientos acertados en octavos." },
-  { id: "asencio",       emoji: "👧", name: "Asencio",       positive: false, priority: 12, description: "Más de dieciseisaños que dieciseisavos, como nuestro protagonista... para encerrarlo." },
-  { id: "gafe",          emoji: "🪦", name: "Gafe",          positive: false, priority: 13, description: "Más tiempo en el pozo que un cubo. Lidera el ranking de últimos puestos con autoridad." },
+  { id: "leprechaun",    emoji: "🍀", name: "Leprechaun",    positive: true,  priority: 2,  description: "Encontró la olla de oro: campeón, subcampeón, tercero, botas y balones. El cuadro de honor de la quiniela." },
+  { id: "hechicero",     emoji: "🧙‍♂️", name: "Hechicero",    positive: true,  priority: 3,  description: "Ve el futuro de semifinales antes de que se juegue. El que mejor combina equipos clasificados y enfrentamientos acertados en semis." },
+  { id: "iman",          emoji: "🧲", name: "Imán",          positive: true,  priority: 4,  description: "Atrae los cruces de cuartos como si los hubiera fijado él mismo. El que mejor combina equipos clasificados y enfrentamientos acertados en cuartos." },
+  { id: "arquitecto",    emoji: "🏗️", name: "Arquitecto",    positive: true,  priority: 5,  description: "Construye el bracket perfecto, pieza a pieza. El que mejor combina equipos clasificados y enfrentamientos acertados en octavos." },
+  { id: "estratega",     emoji: "🧠", name: "Estratega",     positive: true,  priority: 6,  description: "Le importan lo mismo los signos que los del horóscopo y los marcadores los pone al azar, pero te arma un PowerPoint de sus aciertos con el grupo de la muerte." },
+  { id: "pelotazo",      emoji: "🎰", name: "Pelotazo",      positive: true,  priority: 7,  description: "Acertó ese marcador rarísimo que nadie más vio venir. Suerte o genialidad, tú decides." },
+  { id: "cohete",        emoji: "🚀", name: "Cohete",        positive: true,  priority: 8,  description: "De cero a héroe en una jornada. La mayor subida de posiciones de un tirón." },
+  { id: "ned",           emoji: "🧑‍🏫", name: "Ned Flanders", positive: true,  priority: 9,  description: "Sus predicciones son tan correctas que aburren. El vecino responsable que todos odian un poco." },
+  { id: "consistente",   emoji: "🪨", name: "Consistente",   positive: true,  priority: 10, description: "Nunca ha tocado fondo. Como una roca, pero con quinielas." },
+  { id: "fumanchu",      emoji: "💨", name: "Fumanchú",      positive: false, priority: 11, description: "Predijo un marcador tan disparatado que huele a humo. El problema no fue el partido, fuiste tú." },
+  { id: "triplista",     emoji: "🏀", name: "Triplista",     positive: false, priority: 12, description: "No falla uno, los falla todos. Consistencia en el desastre, hay que reconocérselo." },
+  { id: "ciego",         emoji: "🙈", name: "Ciego",         positive: false, priority: 13, description: "El peor ratio exactos/partidos. Tiene los ojos abiertos pero no ve nada." },
+  { id: "doscaras",      emoji: "🎭", name: "Dos Caras",     positive: false, priority: 14, description: "En semis nunca se sabe cuál predicción va a salir. El que peor combina equipos clasificados y enfrentamientos acertados en semis." },
+  { id: "cuatroojos",    emoji: "👓", name: "Cuatro Ojos",   positive: false, priority: 15, description: "Cuatro ojos y ni así ve venir los cruces de cuartos. El que peor combina equipos clasificados y enfrentamientos acertados en cuartos." },
+  { id: "chavo8",        emoji: "🎱", name: "Chavo del 8",   positive: false, priority: 16, description: "La bola que si la metes, pierdes la partida. El que peor combina equipos clasificados y enfrentamientos acertados en octavos." },
+  { id: "asencio",       emoji: "👧", name: "Asencio",       positive: false, priority: 17, description: "Más de dieciseisaños que dieciseisavos, como nuestro protagonista... para encerrarlo." },
+  { id: "gafe",          emoji: "🪦", name: "Gafe",          positive: false, priority: 18, description: "Más tiempo en el pozo que un cubo. Lidera el ranking de últimos puestos con autoridad." },
 ];
 
 // ---- Helpers ----
@@ -132,15 +137,23 @@ function disparateScore(
   return Math.round((base + bonus) * multiplicador);
 }
 
-const MARCADORES_COMUNES = new Set(["0-0","1-0","0-1","1-1","2-0","0-2","2-1","1-2","2-2","3-0","0-3"]);
+/**
+ * Rareza de un marcador — cuánto cuesta acertarlo EXACTO, a más goles y más diferencia entre
+ * ellos, más raro (más improbable) el resultado. Cada 2 goles totales o 2 de diferencia entre
+ * local/visitante suman un punto de rareza, así que un 7-1 (total 8, dif 6 → rareza 8) pesa
+ * mucho más que un 1-3 (total 4, dif 2 → rareza 4), aunque ambos sean marcadores "poco comunes".
+ */
+function rarezaDeMarcador(pred: { local: number; visitante: number }): number {
+  const total = pred.local + pred.visitante;
+  const diff = Math.abs(pred.local - pred.visitante);
+  return 1 + Math.floor(total / 2) + Math.floor(diff / 2);
+}
 
 function pelotazoScore(
   pred: { local: number; visitante: number },
   failedFraction: number,
 ): number {
-  const key = `${pred.local}-${pred.visitante}`;
-  const rareza = MARCADORES_COMUNES.has(key) ? 1 : 2;
-  return failedFraction * rareza;
+  return failedFraction * rarezaDeMarcador(pred);
 }
 
 /**
@@ -192,16 +205,44 @@ export function computeBadges(
     clasifTotalOctavos: number;            // equipos que predijo en total (normalmente 16)
     enfrentamientosAcertadosOctavos: number; // cruces de octavos ya fijados en admin que coinciden con su predicción
     enfrentamientosTotalOctavos: number;     // cruces de octavos que predijo en total (normalmente 8)
-    combinedOctavosScore: number;            // pts clasificados + pts por enfrentamiento acertado, ambos en octavos (Bola Blanca/Chavo del 8)
+    combinedOctavosScore: number;            // pts clasificados + pts por enfrentamiento acertado, ambos en octavos (Arquitecto/Chavo del 8)
+    clasifAcertadosCuartos: number;        // equipos que predijo clasificados a cuartos y sí lo hicieron
+    clasifTotalCuartos: number;            // equipos que predijo en total (normalmente 8)
+    enfrentamientosAcertadosCuartos: number; // cruces de cuartos ya fijados en admin que coinciden con su predicción
+    enfrentamientosTotalCuartos: number;     // cruces de cuartos que predijo en total (normalmente 4)
+    combinedCuartosScore: number;            // pts clasificados + pts por enfrentamiento acertado, ambos en cuartos (Imán/Cuatro Ojos)
+    clasifAcertadosSemis: number;          // equipos que predijo clasificados a semis y sí lo hicieron
+    clasifTotalSemis: number;              // equipos que predijo en total (normalmente 4)
+    enfrentamientosAcertadosSemis: number;   // cruces de semis ya fijados en admin que coinciden con su predicción
+    enfrentamientosTotalSemis: number;       // cruces de semis que predijo en total (normalmente 2)
+    combinedSemisScore: number;              // pts clasificados + pts por enfrentamiento acertado, ambos en semis (Hechicero/Dos Caras)
+    honorAcertados: number;                // aciertos en el cuadro de honor (campeón, subcampeón, tercero, botas, balones)
+    honorTotal: number;                    // total de categorías del cuadro de honor rellenadas por el jugador
+    honorScore: number;                    // puntos ponderados del cuadro de honor (Leprechaun)
   }
 
   const clasifDieciseisReal = new Set(toStringArray(extra["clasif_dieciseisavos"]));
   const clasifOctavosReal = new Set(toStringArray(extra["clasif_octavos"]));
+  const clasifCuartosReal = new Set(toStringArray(extra["clasif_cuartos"]));
+  const clasifSemisReal = new Set(toStringArray(extra["clasif_semis"]));
 
-  // Cruces de dieciseisavos/octavos ya fijados por el admin (independiente de si ya se jugaron/tienen marcador).
-  // Acertar el enfrentamiento = el "partido" que predijo el jugador coincide con uno de estos, ya fijados.
-  const cruceDieciseisFijados = new Set((CRUCES["enfr_dieciseisavos"] ?? []).map(c => c.partido));
-  const cruceOctavosFijados = new Set((CRUCES["enfr_octavos"] ?? []).map(c => c.partido));
+  // Cruces de cada ronda ya fijados por el admin (independiente de si ya se jugaron/tienen marcador).
+  // "Fijado" = tiene kickoff real en el JSON. Rondas como semis/3y4/final pueden tener varias
+  // entradas PROVISIONALES en cruces_eliminatoria.json (solo para saber qué jugador predijo qué
+  // cruce) sin que el cruce real esté decidido todavía — esas no cuentan como fijadas.
+  const soloConKickoff = (entries: CruceFijado[]) => entries.filter(f => !!f.kickoff);
+  const cruceDieciseisFijados = new Set(soloConKickoff(CRUCES["enfr_dieciseisavos"] ?? []).map(c => c.partido));
+  const cruceOctavosFijados = new Set(soloConKickoff(CRUCES["enfr_octavos"] ?? []).map(c => c.partido));
+  const cruceCuartosFijados = new Set(soloConKickoff(CRUCES["enfr_cuartos"] ?? []).map(c => c.partido));
+  const cruceSemisFijados = new Set(soloConKickoff(CRUCES["enfr_semis"] ?? []).map(c => c.partido));
+
+  // Cuadro de honor: mismos pesos que HONOR_PTS en scoring.ts (no exportado desde allí, así que
+  // se replica aquí). Si cambian los pesos en scoring.ts, hay que actualizar esto también.
+  const HONOR_PTS: Record<string, number> = {
+    campeon: 50, subcampeon: 40, tercero: 30,
+    bota_oro: 30, bota_plata: 20, bota_bronce: 10,
+    balon_oro: 30, balon_plata: 20, balon_bronce: 10,
+  };
 
   const stats: PlayerStats[] = players.map(p => {
     let signos1x2 = 0, exactos = 0, jugados = 0, fallosGordos = 0;
@@ -275,10 +316,54 @@ export function computeBadges(
 
     const combinedOctavosScore = clasifPtsOctavos + enfrentamientoPtsOctavos;
 
+    // Mismo cálculo, pero para cuartos
+    const clasifAcertadosCuartos = clasifCuartosReal.size > 0
+      ? p.clasif_cuartos.filter(eq => clasifCuartosReal.has(eq)).length
+      : 0;
+    const clasifTotalCuartos = p.clasif_cuartos.length;
+    const clasifPtsCuartos = clasifAcertadosCuartos * CLASIF_PTS["cuartos"];
+
+    const ENFRENTAMIENTO_PTS_CUARTOS = KO_PTS["cuartos"][0];
+    const enfrentamientosAcertadosCuartos = p.enfr_cuartos.filter(m => cruceCuartosFijados.has(m.partido)).length;
+    const enfrentamientosTotalCuartos = p.enfr_cuartos.length;
+    const enfrentamientoPtsCuartos = enfrentamientosAcertadosCuartos * ENFRENTAMIENTO_PTS_CUARTOS;
+
+    const combinedCuartosScore = clasifPtsCuartos + enfrentamientoPtsCuartos;
+
+    // Mismo cálculo, pero para semis
+    const clasifAcertadosSemis = clasifSemisReal.size > 0
+      ? p.clasif_semis.filter(eq => clasifSemisReal.has(eq)).length
+      : 0;
+    const clasifTotalSemis = p.clasif_semis.length;
+    const clasifPtsSemis = clasifAcertadosSemis * CLASIF_PTS["semis"];
+
+    const ENFRENTAMIENTO_PTS_SEMIS = KO_PTS["semis"][0];
+    const enfrentamientosAcertadosSemis = p.enfr_semis.filter(m => cruceSemisFijados.has(m.partido)).length;
+    const enfrentamientosTotalSemis = p.enfr_semis.length;
+    const enfrentamientoPtsSemis = enfrentamientosAcertadosSemis * ENFRENTAMIENTO_PTS_SEMIS;
+
+    const combinedSemisScore = clasifPtsSemis + enfrentamientoPtsSemis;
+
+    // Cuadro de honor: campeón, subcampeón, tercero, botas y balones. Solo cuenta cada categoría
+    // si el admin ya rellenó el resultado real (extra[clave]) y el jugador predijo algo en ella.
+    let honorAcertados = 0, honorTotal = 0, honorScore = 0;
+    for (const [clave, pts] of Object.entries(HONOR_PTS)) {
+      const pred = p.cuadro_honor[clave];
+      if (!pred) continue;
+      honorTotal++;
+      if (extra[clave] && extra[clave] === pred) {
+        honorAcertados++;
+        honorScore += pts;
+      }
+    }
+
     return {
       id: p.id, nombre: p.nombre, signos1x2, exactos, jugados, fallosGordos, worstDisparate, exactoDetails,
       clasifAcertados, clasifTotal, enfrentamientosAcertados, enfrentamientosTotal, combinedDieciseisScore,
       clasifAcertadosOctavos, clasifTotalOctavos, enfrentamientosAcertadosOctavos, enfrentamientosTotalOctavos, combinedOctavosScore,
+      clasifAcertadosCuartos, clasifTotalCuartos, enfrentamientosAcertadosCuartos, enfrentamientosTotalCuartos, combinedCuartosScore,
+      clasifAcertadosSemis, clasifTotalSemis, enfrentamientosAcertadosSemis, enfrentamientosTotalSemis, combinedSemisScore,
+      honorAcertados, honorTotal, honorScore,
     };
   });
 
@@ -287,9 +372,25 @@ export function computeBadges(
   const hasDieciseisavosData =
     clasifDieciseisReal.size > 0 || cruceDieciseisFijados.size > 0;
 
-  // Igual que hasDieciseisavosData, pero para octavos (Bola Blanca/Chavo del 8)
+  // Igual que hasDieciseisavosData, pero para octavos (Arquitecto/Chavo del 8)
   const hasOctavosData =
     clasifOctavosReal.size > 0 || cruceOctavosFijados.size > 0;
+
+  // Igual que hasOctavosData, pero para cuartos (Imán/Cuatro Ojos) y semis (Hechicero/Dos Caras).
+  // Estos se quedarán sin asignar hasta que se fijen cruces o se rellenen clasificados de esa ronda.
+  const hasCuartosData =
+    clasifCuartosReal.size > 0 || cruceCuartosFijados.size > 0;
+  // Semis desactivado a mano por ahora: cruces_eliminatoria.json ya trae varias entradas de
+  // "enfr_semis" (una por cada combinación que algún jugador predijo), pero eso no significa que
+  // el cruce real esté fijado — a diferencia de dieciseisavos/octavos, donde sí lo está. Cuando
+  // los resultados de semis estén listos para repartir, cambiar a `true`.
+  const SEMIS_BADGES_ENABLED = false;
+  const hasSemisData =
+    SEMIS_BADGES_ENABLED && (clasifSemisReal.size > 0 || cruceSemisFijados.size > 0);
+
+  // Leprechaun: solo se asigna si el admin ya rellenó al menos una categoría real del cuadro de
+  // honor (campeón, subcampeón, tercero, botas, balones).
+  const hasHonorData = Object.keys(HONOR_PTS).some(clave => !!extra[clave]);
 
   // Pelotazo
   const exactosByPartido: Record<string, number> = {};
@@ -410,6 +511,14 @@ export function computeBadges(
       case "arquitecto":
       case "chavo8":
         return `${s?.clasifAcertadosOctavos ?? 0}/${s?.clasifTotalOctavos ?? 0} equipos + ${s?.enfrentamientosAcertadosOctavos ?? 0}/${s?.enfrentamientosTotalOctavos ?? 8} enfrentamientos acertados en octavos (${s?.combinedOctavosScore ?? 0} pts)`;
+      case "iman":
+      case "cuatroojos":
+        return `${s?.clasifAcertadosCuartos ?? 0}/${s?.clasifTotalCuartos ?? 0} equipos + ${s?.enfrentamientosAcertadosCuartos ?? 0}/${s?.enfrentamientosTotalCuartos ?? 4} enfrentamientos acertados en cuartos (${s?.combinedCuartosScore ?? 0} pts)`;
+      case "hechicero":
+      case "doscaras":
+        return `${s?.clasifAcertadosSemis ?? 0}/${s?.clasifTotalSemis ?? 0} equipos + ${s?.enfrentamientosAcertadosSemis ?? 0}/${s?.enfrentamientosTotalSemis ?? 2} enfrentamientos acertados en semis (${s?.combinedSemisScore ?? 0} pts)`;
+      case "leprechaun":
+        return `${s?.honorAcertados ?? 0}/${s?.honorTotal ?? 0} aciertos en el cuadro de honor (${s?.honorScore ?? 0} pts)`;
       case "pelotazo": {
         const p = pelotazoScores[playerId];
         return p?.score > 0
@@ -504,6 +613,17 @@ export function computeBadges(
   // Asignar en orden de prioridad
   assign("quinielas",   stats.map(s => ({ id: s.id, val: s.signos1x2 })),                                         true);
   assign("visionario",  stats.map(s => ({ id: s.id, val: s.exactos })),                                           true);
+  if (hasHonorData) {
+    assign("leprechaun", stats.map(s => ({ id: s.id, val: s.honorScore })),                                       true);
+  }
+  if (hasSemisData) {
+    assign("hechicero",  stats.map(s => ({ id: s.id, val: s.combinedSemisScore })),                               true);
+    assign("doscaras",   stats.map(s => ({ id: s.id, val: s.combinedSemisScore })),                               false);
+  }
+  if (hasCuartosData) {
+    assign("iman",       stats.map(s => ({ id: s.id, val: s.combinedCuartosScore })),                             true);
+    assign("cuatroojos", stats.map(s => ({ id: s.id, val: s.combinedCuartosScore })),                             false);
+  }
   if (hasOctavosData) {
     assign("arquitecto", stats.map(s => ({ id: s.id, val: s.combinedOctavosScore })),                             true);
     assign("chavo8",     stats.map(s => ({ id: s.id, val: s.combinedOctavosScore })),                             false);
