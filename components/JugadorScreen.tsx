@@ -35,14 +35,26 @@ const KO_BAREMO: Record<string, [number, number, number]> = {
   semis: [6, 4, 10], "3y4": [10, 5, 15], final: [12, 6, 18],
 };
 
-// Última ronda con kickoffs definidos = ronda activa
+// Última ronda cuyo primer partido ya ha comenzado = ronda activa
 const DEFAULT_RONDA_TAB: string = (() => {
   const keys = ["dieciseisavos", "octavos", "cuartos", "semis", "3y4", "final"];
-  let active = "dieciseisavos";
+  const now = Date.now();
+  let earliestFuture = Infinity;
+  let futureKey: string | null = null;
   for (const key of keys) {
-    if ((CRUCES_DATA["enfr_" + key] ?? []).some((c: CruceReal) => c.kickoff)) active = key;
+    for (const c of (CRUCES_DATA["enfr_" + key] ?? [])) {
+      if ((c as CruceReal).kickoff) {
+        const t = new Date((c as CruceReal).kickoff!).getTime();
+        if (t > now && t < earliestFuture) { earliestFuture = t; futureKey = key; }
+      }
+    }
   }
-  return active;
+  if (futureKey) return futureKey;
+  let pastKey = "dieciseisavos";
+  for (const key of keys) {
+    if ((CRUCES_DATA["enfr_" + key] ?? []).some((c: CruceReal) => c.kickoff && new Date(c.kickoff).getTime() <= now)) pastKey = key;
+  }
+  return pastKey;
 })();
 
 const KO_RONDAS = [

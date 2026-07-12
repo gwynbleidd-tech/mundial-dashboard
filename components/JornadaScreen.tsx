@@ -53,14 +53,27 @@ const NEXT_CLASIF_RONDA: Partial<Record<KoRondaKey, string>> = {
 const TODAY_ISO = new Date().toISOString().slice(0, 10);
 const DEFAULT_PHASE: Phase = TODAY_ISO >= "2026-06-28" ? "eliminatorias" : "grupos";
 
-// Última ronda con kickoffs definidos = ronda activa
+// Ronda activa: la que contiene el próximo kickoff futuro más cercano.
+// Si todos los kickoffs han pasado, la última ronda con kickoffs definidos.
 const DEFAULT_KO_RONDA: KoRondaKey = (() => {
   const keys: KoRondaKey[] = ["dieciseisavos", "octavos", "cuartos", "semis", "3y4", "final"];
-  let active: KoRondaKey = "dieciseisavos";
+  const now = Date.now();
+  let earliestFuture = Infinity;
+  let futureKey: KoRondaKey | null = null;
   for (const key of keys) {
-    if ((CRUCES["enfr_" + key] ?? []).some((c) => c.kickoff)) active = key;
+    for (const c of (CRUCES["enfr_" + key] ?? [])) {
+      if (c.kickoff) {
+        const t = new Date(c.kickoff).getTime();
+        if (t > now && t < earliestFuture) { earliestFuture = t; futureKey = key as KoRondaKey; }
+      }
+    }
   }
-  return active;
+  if (futureKey) return futureKey;
+  let pastKey: KoRondaKey = "dieciseisavos";
+  for (const key of keys) {
+    if ((CRUCES["enfr_" + key] ?? []).some((c) => c.kickoff && new Date(c.kickoff).getTime() <= now)) pastKey = key as KoRondaKey;
+  }
+  return pastKey;
 })();
 
 function formatKoHora(kickoff: string): string {

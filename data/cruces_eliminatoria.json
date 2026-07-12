@@ -203,83 +203,18 @@
   ],
   "enfr_semis": [
     {
-      "partido": "Brasil-Portugal",
-      "local": "Brasil",
-      "visitante": "Portugal",
-      "jugadores": [
-        "borja",
-        "jotha",
-        "martin"
-      ]
-    },
-    {
       "partido": "Francia-España",
       "local": "Francia",
       "visitante": "España",
-      "jugadores": [
-        "serra",
-        "martin",
-        "pecho"
-      ]
+      "kickoff": "2026-07-14T21:00:00+02:00",
+      "jugadores": ["serra", "martin", "pecho"]
     },
     {
-      "partido": "Inglaterra-Portugal",
+      "partido": "Inglaterra-Argentina",
       "local": "Inglaterra",
-      "visitante": "Portugal",
-      "jugadores": [
-        "arroyo",
-        "serra",
-        "pecho"
-      ]
-    },
-    {
-      "partido": "Países Bajos-España",
-      "local": "Países Bajos",
-      "visitante": "España",
-      "jugadores": [
-        "arroyo",
-        "jotha"
-      ]
-    },
-    {
-      "partido": "Alemania-España",
-      "local": "Alemania",
-      "visitante": "España",
-      "jugadores": [
-        "larios"
-      ]
-    },
-    {
-      "partido": "Brasil-Argentina",
-      "local": "Brasil",
       "visitante": "Argentina",
-      "jugadores": [
-        "larios"
-      ]
-    },
-    {
-      "partido": "Francia-Colombia",
-      "local": "Francia",
-      "visitante": "Colombia",
-      "jugadores": [
-        "aldo"
-      ]
-    },
-    {
-      "partido": "Marruecos-España",
-      "local": "Marruecos",
-      "visitante": "España",
-      "jugadores": [
-        "borja"
-      ]
-    },
-    {
-      "partido": "Países Bajos-Argentina",
-      "local": "Países Bajos",
-      "visitante": "Argentina",
-      "jugadores": [
-        "aldo"
-      ]
+      "kickoff": "2026-07-15T21:00:00+02:00",
+      "jugadores": []
     }
   ],
   "enfr_3y4": [
