@@ -384,7 +384,7 @@ export function computeBadges(
   // "enfr_semis" (una por cada combinación que algún jugador predijo), pero eso no significa que
   // el cruce real esté fijado — a diferencia de dieciseisavos/octavos, donde sí lo está. Cuando
   // los resultados de semis estén listos para repartir, cambiar a `true`.
-  const SEMIS_BADGES_ENABLED = false;
+  const SEMIS_BADGES_ENABLED = true;
   const hasSemisData =
     SEMIS_BADGES_ENABLED && (clasifSemisReal.size > 0 || cruceSemisFijados.size > 0);
 
