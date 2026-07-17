@@ -219,113 +219,20 @@
   ],
   "enfr_3y4": [
     {
-      "partido": "España-Inglaterra",
-      "local": "España",
-      "visitante": "Inglaterra",
-      "jugadores": [
-        "arroyo",
-        "serra"
-      ]
-    },
-    {
-      "partido": "Alemania-Argentina",
-      "local": "Alemania",
-      "visitante": "Argentina",
-      "jugadores": [
-        "larios"
-      ]
-    },
-    {
-      "partido": "Colombia-Países Bajos",
-      "local": "Colombia",
-      "visitante": "Países Bajos",
-      "jugadores": [
-        "aldo"
-      ]
-    },
-    {
-      "partido": "España-Brasil",
-      "local": "España",
-      "visitante": "Brasil",
-      "jugadores": [
-        "martin"
-      ]
-    },
-    {
-      "partido": "España-Portugal",
-      "local": "España",
-      "visitante": "Portugal",
-      "jugadores": [
-        "jotha"
-      ]
-    },
-    {
       "partido": "Francia-Inglaterra",
       "local": "Francia",
       "visitante": "Inglaterra",
-      "jugadores": [
-        "pecho"
-      ]
-    },
-    {
-      "partido": "Marruecos-Brasil",
-      "local": "Marruecos",
-      "visitante": "Brasil",
-      "jugadores": [
-        "borja"
-      ]
+      "kickoff": "2026-07-18T23:00:00+02:00",
+      "jugadores": ["pecho"]
     }
   ],
   "enfr_final": [
     {
-      "partido": "España-Portugal",
+      "partido": "España-Argentina",
       "local": "España",
-      "visitante": "Portugal",
-      "jugadores": [
-        "borja",
-        "pecho"
-      ]
-    },
-    {
-      "partido": "Francia-Portugal",
-      "local": "Francia",
-      "visitante": "Portugal",
-      "jugadores": [
-        "serra",
-        "martin"
-      ]
-    },
-    {
-      "partido": "España-Brasil",
-      "local": "España",
-      "visitante": "Brasil",
-      "jugadores": [
-        "larios"
-      ]
-    },
-    {
-      "partido": "Francia-Argentina",
-      "local": "Francia",
       "visitante": "Argentina",
-      "jugadores": [
-        "aldo"
-      ]
-    },
-    {
-      "partido": "Países Bajos-Brasil",
-      "local": "Países Bajos",
-      "visitante": "Brasil",
-      "jugadores": [
-        "jotha"
-      ]
-    },
-    {
-      "partido": "Países Bajos-Portugal",
-      "local": "Países Bajos",
-      "visitante": "Portugal",
-      "jugadores": [
-        "arroyo"
-      ]
+      "kickoff": "2026-07-19T21:00:00+02:00",
+      "jugadores": []
     }
   ]
 }
