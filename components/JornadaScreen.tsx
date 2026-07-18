@@ -50,6 +50,12 @@ const NEXT_CLASIF_RONDA: Partial<Record<KoRondaKey, string>> = {
   semis:         "final",
 };
 
+const HONOR_HINTS: Partial<Record<KoRondaKey, Array<{ key: string; label: string; pts: number }>>> = {
+  "3y4": [{ key: "tercero",    label: "3º",        pts: 30 }],
+  final: [{ key: "campeon",    label: "Campeón",   pts: 50 },
+          { key: "subcampeon", label: "Subcampeón", pts: 40 }],
+};
+
 const TODAY_ISO = new Date().toISOString().slice(0, 10);
 const DEFAULT_PHASE: Phase = TODAY_ISO >= "2026-06-28" ? "eliminatorias" : "grupos";
 
@@ -580,6 +586,16 @@ export default function JornadaScreen({ players, real, extra, youtube }: Props) 
                         const clasifResolved = !!r && Array.isArray(actualNextClasif) && (actualNextClasif as string[]).length > 0;
                         const nextPts = nextRonda ? (CLASIF_PTS[nextRonda] ?? 0) : 0;
 
+                        // Indicadores de cuadro de honor (3y4 y final)
+                        const honorIndicators = (HONOR_HINTS[koRonda] ?? []).flatMap(hint => {
+                          const playerPred = (p.cuadro_honor[hint.key] as string | null) ?? null;
+                          if (!playerPred || ![cruce.local, cruce.visitante].includes(playerPred)) return [];
+                          const realVal = extra[hint.key] as string | undefined;
+                          const correct = !!realVal && realVal === playerPred;
+                          const wrong = !!realVal && realVal !== playerPred;
+                          return [{ hint, playerPred, correct, wrong }];
+                        });
+
                         return (
                           <div
                             key={p.id}
@@ -641,6 +657,33 @@ export default function JornadaScreen({ players, real, extra, youtube }: Props) 
                                           fontWeight: 700, color: C.pitch,
                                         }}>
                                           +{nextPts}
+                                        </span>
+                                      )}
+                                    </span>
+                                  );
+                                })}
+                              </span>
+                            )}
+
+                            {/* Indicador de cuadro de honor (3y4 y final) */}
+                            {honorIndicators.length > 0 && (
+                              <span style={{
+                                marginLeft: "auto", flexShrink: 0,
+                                display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-end",
+                              }}>
+                                {honorIndicators.map(({ hint, playerPred, correct, wrong }) => {
+                                  const color = correct ? "#2E8B57" : wrong ? C.rojo : C.muted;
+                                  return (
+                                    <span key={hint.key} style={{ display: "flex", alignItems: "center", gap: 3, whiteSpace: "nowrap" }}>
+                                      <span style={{ fontSize: 12, color }}>{correct ? "✓" : wrong ? "✗" : "→"}</span>
+                                      <span style={{ fontSize: 11, color: C.muted, fontStyle: "italic" }}>{hint.label}</span>
+                                      <span style={{ fontSize: 12, fontStyle: "italic", color }}>{playerPred}</span>
+                                      {correct && (
+                                        <span style={{
+                                          fontFamily: "'DM Mono', monospace", fontSize: 11,
+                                          fontWeight: 700, color: C.pitch,
+                                        }}>
+                                          +{hint.pts}
                                         </span>
                                       )}
                                     </span>
