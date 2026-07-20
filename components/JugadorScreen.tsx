@@ -149,29 +149,50 @@ function MatchRow({
   );
 }
 
-function HonorRow({ items }: { items: { label: string; val: string | null | undefined }[] }) {
+function HonorRow({ items, extra }: {
+  items: { label: string; val: string | null | undefined; extraKey: string; pts: number }[];
+  extra: RealExtra;
+}) {
   return (
     <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-      {items.map(({ label, val }) => (
-        <div key={label} style={{
-          flex: 1, border: `1px solid ${C.line}`, borderRadius: 4, padding: "7px 8px",
-          minWidth: 0,
-        }}>
-          <div style={{
-            fontSize: 8, letterSpacing: ".08em", textTransform: "uppercase",
-            color: C.muted, fontWeight: 700, whiteSpace: "nowrap",
-            overflow: "hidden", textOverflow: "ellipsis",
+      {items.map(({ label, val, extraKey, pts }) => {
+        const realVal = extra[extraKey] as string | undefined;
+        const isCorrect = !!realVal && realVal === val;
+        const isWrong = !!realVal && !!val && realVal !== val;
+        const borderColor = isCorrect ? "#2E8B57" : isWrong ? C.rojo : C.line;
+        const bg = isCorrect ? "rgba(46,139,87,0.05)" : isWrong ? "rgba(211,47,47,0.04)" : "transparent";
+        const textColor = isCorrect ? "#2E8B57" : isWrong ? C.rojo : C.ink;
+        return (
+          <div key={label} style={{
+            flex: 1, border: `1px solid ${borderColor}`, borderRadius: 4,
+            padding: "7px 8px", minWidth: 0, background: bg,
           }}>
-            {label}
+            <div style={{
+              fontSize: 8, letterSpacing: ".08em", textTransform: "uppercase",
+              color: C.muted, fontWeight: 700, whiteSpace: "nowrap",
+              overflow: "hidden", textOverflow: "ellipsis",
+            }}>
+              {label}
+            </div>
+            <div style={{
+              fontSize: 12, fontWeight: 700, marginTop: 3, color: textColor,
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
+              {isCorrect ? "✓ " : isWrong ? "✗ " : ""}{val || "—"}
+            </div>
+            {isCorrect && (
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 700, color: C.pitch, marginTop: 1 }}>
+                +{pts} pts
+              </div>
+            )}
+            {isWrong && realVal && (
+              <div style={{ fontSize: 10, color: C.muted, fontStyle: "italic", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                era: {realVal}
+              </div>
+            )}
           </div>
-          <div style={{
-            fontSize: 12, fontWeight: 700, marginTop: 3, color: C.ink,
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          }}>
-            {val || "—"}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -1340,41 +1361,85 @@ export default function JugadorScreen({ players, picked, onPick, real, extra, ra
         <SectionToggle label="Cuadro de honor" open={openSections.has("honor")} onToggle={() => toggleSection("honor")} />
         {openSections.has("honor") && h && (
           <div style={{ marginTop: 10 }}>
-            <div style={{ background: C.ink, borderRadius: 4, padding: "12px 14px", marginBottom: 6 }}>
-              <div style={{ fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: C.gold, fontWeight: 700 }}>
-                Campeón
-              </div>
-              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: 22, color: C.chalk, letterSpacing: ".01em", marginTop: 2 }}>
-                {h.campeon || "—"}
-              </div>
-            </div>
+            {(() => {
+              const realVal = extra.campeon as string | undefined;
+              const isCorrect = !!realVal && realVal === h.campeon;
+              const isWrong = !!realVal && !!h.campeon && realVal !== h.campeon;
+              return (
+                <div style={{
+                  background: C.ink, borderRadius: 4, padding: "12px 14px", marginBottom: 6,
+                  outline: isCorrect ? "2px solid #2E8B57" : isWrong ? `2px solid ${C.rojo}` : "none",
+                  outlineOffset: -2,
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: C.gold, fontWeight: 700 }}>
+                      Campeón
+                    </div>
+                    {isCorrect && (
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 700, color: "#2E8B57" }}>
+                        ✓ +50 pts
+                      </span>
+                    )}
+                    {isWrong && (
+                      <span style={{ fontSize: 11, color: C.rojo }}>✗ era {realVal}</span>
+                    )}
+                  </div>
+                  <div style={{
+                    fontFamily: "'Anton', sans-serif", fontSize: 22,
+                    color: isCorrect ? "#2E8B57" : isWrong ? C.rojo : C.chalk,
+                    letterSpacing: ".01em", marginTop: 2,
+                  }}>
+                    {h.campeon || "—"}
+                  </div>
+                </div>
+              );
+            })()}
 
             <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
               {[
-                { label: "Subcampeón", val: h.subcampeon },
-                { label: "3er puesto", val: h.tercero },
-              ].map(({ label, val }) => (
-                <div key={label} style={{ flex: 1, border: `1px solid ${C.line}`, borderRadius: 4, padding: "8px 10px", minWidth: 0 }}>
-                  <div style={{ fontSize: 9, letterSpacing: ".08em", textTransform: "uppercase", color: C.muted, fontWeight: 700 }}>
-                    {label}
+                { label: "Subcampeón", val: h.subcampeon, extraKey: "subcampeon", pts: 40 },
+                { label: "3er puesto", val: h.tercero,    extraKey: "tercero",    pts: 30 },
+              ].map(({ label, val, extraKey, pts }) => {
+                const realVal = extra[extraKey] as string | undefined;
+                const isCorrect = !!realVal && realVal === val;
+                const isWrong = !!realVal && !!val && realVal !== val;
+                return (
+                  <div key={label} style={{
+                    flex: 1, borderRadius: 4, padding: "8px 10px", minWidth: 0,
+                    border: `1px solid ${isCorrect ? "#2E8B57" : isWrong ? C.rojo : C.line}`,
+                    background: isCorrect ? "rgba(46,139,87,0.05)" : isWrong ? "rgba(211,47,47,0.04)" : "transparent",
+                  }}>
+                    <div style={{ fontSize: 9, letterSpacing: ".08em", textTransform: "uppercase", color: C.muted, fontWeight: 700 }}>
+                      {label}
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 700, marginTop: 3, color: isCorrect ? "#2E8B57" : isWrong ? C.rojo : C.ink }}>
+                      {isCorrect ? "✓ " : isWrong ? "✗ " : ""}{val || "—"}
+                    </div>
+                    {isCorrect && (
+                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 700, color: C.pitch, marginTop: 1 }}>
+                        +{pts} pts
+                      </div>
+                    )}
+                    {isWrong && realVal && (
+                      <div style={{ fontSize: 10, color: C.muted, fontStyle: "italic", marginTop: 1 }}>
+                        era: {realVal}
+                      </div>
+                    )}
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 700, marginTop: 3, color: C.ink }}>
-                    {val || "—"}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            <HonorRow items={[
-              { label: "Bota de oro",    val: h.bota_oro },
-              { label: "Bota de plata",  val: h.bota_plata },
-              { label: "Bota de bronce", val: h.bota_bronce },
+            <HonorRow extra={extra} items={[
+              { label: "Bota de oro",    val: h.bota_oro,     extraKey: "bota_oro",     pts: 30 },
+              { label: "Bota de plata",  val: h.bota_plata,   extraKey: "bota_plata",   pts: 20 },
+              { label: "Bota de bronce", val: h.bota_bronce,  extraKey: "bota_bronce",  pts: 10 },
             ]} />
 
-            <HonorRow items={[
-              { label: "Balón de oro",    val: h.balon_oro },
-              { label: "Balón de plata",  val: h.balon_plata },
-              { label: "Balón de bronce", val: h.balon_bronce },
+            <HonorRow extra={extra} items={[
+              { label: "Balón de oro",    val: h.balon_oro,    extraKey: "balon_oro",    pts: 30 },
+              { label: "Balón de plata",  val: h.balon_plata,  extraKey: "balon_plata",  pts: 20 },
+              { label: "Balón de bronce", val: h.balon_bronce, extraKey: "balon_bronce", pts: 10 },
             ]} />
           </div>
         )}

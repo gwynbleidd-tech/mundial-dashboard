@@ -41,7 +41,7 @@ const KO_RONDAS = [
 ] as const;
 
 type KoRondaKey = typeof KO_RONDAS[number]["key"];
-type Phase = "grupos" | "eliminatorias";
+type Phase = "grupos" | "eliminatorias" | "honor";
 
 const NEXT_CLASIF_RONDA: Partial<Record<KoRondaKey, string>> = {
   dieciseisavos: "octavos",
@@ -55,6 +55,18 @@ const HONOR_HINTS: Partial<Record<KoRondaKey, Array<{ key: string; label: string
   final: [{ key: "campeon",    label: "Campeón",   pts: 50 },
           { key: "subcampeon", label: "Subcampeón", pts: 40 }],
 };
+
+const HONOR_FIELDS_LIST = [
+  { key: "campeon",      label: "Campeón",         pts: 50 },
+  { key: "subcampeon",   label: "Subcampeón",       pts: 40 },
+  { key: "tercero",      label: "3er puesto",       pts: 30 },
+  { key: "bota_oro",     label: "Bota de oro",      pts: 30 },
+  { key: "bota_plata",   label: "Bota de plata",    pts: 20 },
+  { key: "bota_bronce",  label: "Bota de bronce",   pts: 10 },
+  { key: "balon_oro",    label: "Balón de oro",      pts: 30 },
+  { key: "balon_plata",  label: "Balón de plata",    pts: 20 },
+  { key: "balon_bronce", label: "Balón de bronce",   pts: 10 },
+] as const;
 
 const TODAY_ISO = new Date().toISOString().slice(0, 10);
 const DEFAULT_PHASE: Phase = TODAY_ISO >= "2026-06-28" ? "eliminatorias" : "grupos";
@@ -220,9 +232,13 @@ export default function JornadaScreen({ players, real, extra, youtube }: Props) 
     <div>
       <h2 style={hStyle}>Calendario</h2>
 
-      {/* Toggle Grupos / Eliminatorias */}
+      {/* Toggle Grupos / Eliminatorias / Honor */}
       <div style={{ display: "flex", gap: 6, marginTop: 14, marginBottom: 18 }}>
-        {(["grupos", "eliminatorias"] as const).map((p) => (
+        {([
+          { key: "grupos",        label: "Grupos"      },
+          { key: "eliminatorias", label: "Eliminatorias" },
+          { key: "honor",         label: "Honor"        },
+        ] as const).map(({ key: p, label }) => (
           <button
             key={p}
             onClick={() => switchPhase(p)}
@@ -234,7 +250,7 @@ export default function JornadaScreen({ players, real, extra, youtube }: Props) 
               cursor: "pointer",
             }}
           >
-            {p === "grupos" ? "Fase de grupos" : "Eliminatorias"}
+            {label}
           </button>
         ))}
       </div>
@@ -454,6 +470,95 @@ export default function JornadaScreen({ players, real, extra, youtube }: Props) 
       </div>
 
       </>)}
+
+      {/* ── CUADRO DE HONOR ── */}
+      {phase === "honor" && (
+        <div>
+          {HONOR_FIELDS_LIST.map((field) => {
+            const realVal = extra[field.key] as string | undefined;
+            const isFieldOpen = open.has("honor_" + field.key);
+            const playersWithPred = players.filter(p => !!p.cuadro_honor[field.key]);
+            const acertaron = realVal
+              ? playersWithPred.filter(p => p.cuadro_honor[field.key] === realVal).length
+              : 0;
+
+            return (
+              <div key={field.key} style={{ borderBottom: `1px solid ${C.line}` }}>
+                <button
+                  onClick={() => toggleFixture("honor_" + field.key)}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center",
+                    gap: 8, padding: "11px 2px",
+                    border: "none", background: "none", cursor: "pointer", textAlign: "left",
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: C.ink }}>{field.label}</div>
+                    <div style={{ fontSize: 10, color: C.muted, marginTop: 1 }}>
+                      {realVal
+                        ? `${acertaron}/${playersWithPred.length} acertaron · +${field.pts} pts cada uno`
+                        : `${playersWithPred.length} predicciones · pendiente`}
+                    </div>
+                  </div>
+                  {realVal ? (
+                    <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, flexShrink: 0 }}>
+                      {realVal}
+                    </span>
+                  ) : (
+                    <StatusBadge status="proximo" />
+                  )}
+                  <span style={{
+                    flexShrink: 0, fontSize: 12, color: C.muted,
+                    transform: isFieldOpen ? "rotate(90deg)" : "none",
+                    transition: "transform .15s ease",
+                    display: "inline-block", width: 14, textAlign: "center",
+                  }}>›</span>
+                </button>
+
+                {isFieldOpen && (
+                  <div style={{ paddingBottom: 8, paddingLeft: 8 }}>
+                    {players.map((p) => {
+                      const pred = p.cuadro_honor[field.key] as string | null;
+                      if (!pred) return null;
+                      const isCorrect = !!realVal && realVal === pred;
+                      const isWrong = !!realVal && realVal !== pred;
+                      const color = isCorrect ? "#2E8B57" : isWrong ? C.rojo : C.muted;
+                      return (
+                        <div key={p.id} style={{
+                          display: "flex", alignItems: "center", gap: 8,
+                          padding: "3px 2px", borderBottom: `1px solid ${C.chalk}`,
+                        }}>
+                          <span style={{
+                            fontSize: 12, color: C.muted,
+                            width: 72, flexShrink: 0,
+                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                          }}>
+                            {p.nombre.split(" ")[0]}
+                          </span>
+                          <span style={{ fontSize: 12, color, flexShrink: 0 }}>
+                            {isCorrect ? "✓" : isWrong ? "✗" : "→"}
+                          </span>
+                          <span style={{ fontSize: 12, fontStyle: "italic", color, flex: 1 }}>
+                            {pred}
+                          </span>
+                          {isCorrect && (
+                            <span style={{
+                              fontFamily: "'DM Mono', monospace", fontSize: 11,
+                              fontWeight: 700, color: C.pitch, flexShrink: 0,
+                            }}>
+                              +{field.pts}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* ── ELIMINATORIAS ── */}
       {phase === "eliminatorias" && (
